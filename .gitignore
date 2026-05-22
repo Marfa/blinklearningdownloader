@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+
+# Локальные настройки и артефакты отладки
+settings.json
+launch.html
+bundle.main.js
+scripts/*.html
+scripts/*.mp3
+scripts/audio-test-out/
+scripts/native.mp3
+scripts/test-stream.mp3

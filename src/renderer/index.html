@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlinkLearning</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="card">
+      <header>
+        <h1>BlinkLearning</h1>
+        <p id="subtitle" class="subtitle">Вход на blinklearning.com</p>
+      </header>
+
+      <section id="step-login">
+        <form id="login-form" novalidate>
+          <label class="field">
+            <span>Логин</span>
+            <input id="username" name="username" type="text" autocomplete="username" required />
+          </label>
+
+          <label class="field">
+            <span>Пароль</span>
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
+          </label>
+
+          <label class="checkbox">
+            <input id="remember-login" type="checkbox" />
+            <span>Запомнить логин-пароль</span>
+          </label>
+
+          <label class="checkbox">
+            <input id="use-proxy" type="checkbox" />
+            <span>Использовать SOCKS5 прокси-сервер</span>
+          </label>
+
+          <div id="proxy-fields" class="proxy-fields hidden">
+            <label class="field">
+              <span>IP</span>
+              <input id="proxy-host" type="text" placeholder="IP прокси" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span>Порт</span>
+              <input id="proxy-port" type="number" min="1" max="65535" placeholder="Порт" />
+            </label>
+          </div>
+
+          <button id="submit-btn" type="submit">Войти</button>
+        </form>
+
+        <div id="status" class="status hidden" role="status" aria-live="polite"></div>
+      </section>
+
+      <section id="step-lesson" class="hidden">
+        <p id="step-success" class="step-success">Авторизация прошла успешно.</p>
+
+        <label class="field">
+          <span>Укажите ID урока или ссылку</span>
+          <input
+            id="lesson-id"
+            name="lesson-id"
+            type="text"
+            autocomplete="off"
+            placeholder="415263834 или ссылка из браузера"
+          />
+        </label>
+
+        <button type="button" id="instruction-toggle" class="btn-secondary" aria-expanded="false">
+          Инструкция
+        </button>
+
+        <div id="instruction-panel" class="instruction-panel hidden">
+          <ul class="instruction-list">
+            <li>откройте учебник или тетрадь</li>
+            <li>перейдите в нужный урок</li>
+            <li>из строки браузера скопируйте последние цифры или укажите весь адрес полностью</li>
+            <li>
+              пример
+              <span class="instruction-url"
+                >https://www.blinklearning.com/v/1778658518/themes/tmpux/launch.php#responsive/book/4036150/415263834</span
+              >, где цифры после последнего слеша ваш ID (<strong>415263834</strong>)
+            </li>
+          </ul>
+        </div>
+
+        <button type="button" id="lesson-next-btn" class="btn-primary hidden">Далее</button>
+        <button type="button" id="lesson-back-btn" class="btn-back">Назад</button>
+        <button type="button" id="logout-btn" class="btn-outline">Выход</button>
+      </section>
+
+      <section id="step-audio" class="hidden">
+        <p class="step-heading">Укажите номера аудио</p>
+
+        <label class="field">
+          <span>Укажите номер аудио</span>
+          <input
+            id="audio-single"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="Например, 24"
+          />
+        </label>
+
+        <button type="button" id="download-all-btn" class="btn-secondary">Скачать все аудио</button>
+
+        <div id="audio-range-fields" class="hidden">
+          <div class="field field-range">
+            <span class="field-range-title">Диапазон аудио</span>
+            <div class="range-row">
+              <label class="range-cell">
+                <span>С</span>
+                <input id="audio-from" type="text" inputmode="numeric" autocomplete="off" placeholder="1" />
+              </label>
+              <label class="range-cell">
+                <span>По</span>
+                <input id="audio-to" type="text" inputmode="numeric" autocomplete="off" placeholder="99" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="download-start-btn" class="btn-primary hidden">
+          Начать скачивание
+        </button>
+
+        <div id="download-progress" class="download-progress hidden">
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="progress-text" class="progress-text"></p>
+        </div>
+
+        <div id="audio-status" class="status hidden" role="status" aria-live="polite"></div>
+
+        <button type="button" id="audio-back-btn" class="btn-back">Назад</button>
+        <button type="button" id="logout-btn-audio" class="btn-outline">Выход</button>
+      </section>
+    </main>
+
+    <script src="input-validation.js"></script>
+    <script src="renderer.js"></script>
+  </body>
+</html>
