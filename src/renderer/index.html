@@ -2,81 +2,130 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; media-src 'self' file:; img-src 'self' data:"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlinkLearning</title>
+    <link rel="icon" type="image/png" href="assets/logo-header.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+      <symbol id="icon-lang" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path fill="none" stroke="currentColor" stroke-width="1.8" d="M3 12h18M12 3c3 4 3 14 0 18M12 3c-3 4-3 14 0 18"/>
+      </symbol>
+      <symbol id="icon-help" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path fill="currentColor" d="M10.2 8.4c.2-1.6 1.5-2.8 3.3-2.8 1.9 0 3.2 1.1 3.2 2.7 0 1.2-.6 1.9-2.1 2.8-1.2.7-1.6 1.2-1.6 2.1v.4h-2.4v-.5c0-1.3.5-2 1.9-2.9 1.3-.8 1.8-1.4 1.8-2.5 0-1-.8-1.7-2-1.7-1.1 0-1.9.6-2.1 1.7H10.2zm2.5 8.4c0-.9.7-1.6 1.6-1.6s1.6.7 1.6 1.6-.7 1.6-1.6 1.6-1.6-.7-1.6-1.6z"/>
+      </symbol>
+      <symbol id="icon-update" viewBox="0 0 24 24">
+        <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1"/>
+        <path fill="currentColor" d="M12 8.5l3.8 3.8H13.5V16h-3v-3.7H8.2L12 8.5z"/>
+      </symbol>
+    </svg>
     <main class="card">
-      <header>
+      <header class="app-header">
+        <img
+          class="app-logo"
+          src="assets/logo-header.png"
+          width="212"
+          height="100"
+          alt="BlinkLearning"
+        />
         <h1>BlinkLearning</h1>
-        <p id="subtitle" class="subtitle">Вход на blinklearning.com</p>
+        <p id="subtitle" class="subtitle" data-i18n="ui.login.subtitle">Вход на blinklearning.com</p>
       </header>
 
       <section id="step-login">
         <form id="login-form" novalidate>
           <label class="field">
-            <span>Логин</span>
+            <span data-i18n="ui.login.username">Логин</span>
             <input id="username" name="username" type="text" autocomplete="username" required />
           </label>
 
           <label class="field">
-            <span>Пароль</span>
+            <span data-i18n="ui.login.password">Пароль</span>
             <input id="password" name="password" type="password" autocomplete="current-password" required />
           </label>
 
           <label class="checkbox">
             <input id="remember-login" type="checkbox" />
-            <span>Запомнить логин-пароль</span>
+            <span data-i18n="ui.login.remember">Запомнить логин-пароль</span>
           </label>
 
           <label class="checkbox">
             <input id="use-proxy" type="checkbox" />
-            <span>Использовать SOCKS5 прокси-сервер</span>
+            <span data-i18n="ui.login.useProxy">Использовать SOCKS5 прокси-сервер</span>
           </label>
 
           <div id="proxy-fields" class="proxy-fields hidden">
             <label class="field">
-              <span>IP</span>
-              <input id="proxy-host" type="text" placeholder="IP прокси" autocomplete="off" />
+              <span data-i18n="ui.login.proxyIp">IP</span>
+              <input
+                id="proxy-host"
+                type="text"
+                data-i18n-placeholder="ui.login.proxyIpPlaceholder"
+                placeholder="IP прокси"
+                autocomplete="off"
+              />
             </label>
             <label class="field">
-              <span>Порт</span>
-              <input id="proxy-port" type="number" min="1" max="65535" placeholder="Порт" />
+              <span data-i18n="ui.login.proxyPort">Порт</span>
+              <input
+                id="proxy-port"
+                type="number"
+                min="1"
+                max="65535"
+                data-i18n-placeholder="ui.login.proxyPortPlaceholder"
+                placeholder="Порт"
+              />
             </label>
           </div>
 
-          <button id="submit-btn" type="submit">Войти</button>
+          <button id="submit-btn" type="submit" data-i18n="ui.login.submit">Войти</button>
         </form>
 
         <div id="status" class="status hidden" role="status" aria-live="polite"></div>
       </section>
 
       <section id="step-lesson" class="hidden">
-        <p id="step-success" class="step-success">Авторизация прошла успешно.</p>
+        <p id="step-success" class="step-success" data-i18n="ui.lesson.authSuccess">
+          Авторизация прошла успешно.
+        </p>
 
         <label class="field">
-          <span>Укажите ID урока или ссылку</span>
+          <span data-i18n="ui.lesson.idLabel">Укажите ID урока или ссылку</span>
           <input
             id="lesson-id"
             name="lesson-id"
             type="text"
             autocomplete="off"
+            data-i18n-placeholder="ui.lesson.idPlaceholder"
             placeholder="415263834 или ссылка из браузера"
           />
         </label>
 
-        <button type="button" id="instruction-toggle" class="btn-secondary" aria-expanded="false">
+        <button type="button" id="instruction-toggle" class="btn-secondary" aria-expanded="false" data-i18n="ui.lesson.instruction">
           Инструкция
         </button>
 
         <div id="instruction-panel" class="instruction-panel hidden">
           <ul class="instruction-list">
-            <li>откройте учебник или тетрадь</li>
-            <li>перейдите в нужный урок</li>
-            <li>из строки браузера скопируйте последние цифры или укажите весь адрес полностью</li>
-            <li>
+            <li data-i18n="ui.lesson.instruction1">откройте учебник или тетрадь</li>
+            <li data-i18n="ui.lesson.instruction2">перейдите в нужный урок</li>
+            <li data-i18n="ui.lesson.instruction3">
+              из строки браузера скопируйте последние цифры или укажите весь адрес полностью
+            </li>
+            <li data-i18n-html="ui.lesson.instruction4">
               пример
               <span class="instruction-url"
                 >https://www.blinklearning.com/v/1778658518/themes/tmpux/launch.php#responsive/book/4036150/415263834</span
@@ -85,44 +134,61 @@
           </ul>
         </div>
 
-        <button type="button" id="lesson-next-btn" class="btn-primary hidden">Далее</button>
-        <button type="button" id="lesson-back-btn" class="btn-back">Назад</button>
-        <button type="button" id="logout-btn" class="btn-outline">Выход</button>
+        <button type="button" id="lesson-next-btn" class="btn-primary hidden" data-i18n="ui.lesson.next">Далее</button>
+        <button type="button" id="lesson-back-btn" class="btn-back" data-i18n="ui.lesson.back">Назад</button>
+        <button type="button" id="logout-btn" class="btn-outline" data-i18n="ui.lesson.logout">Выход</button>
       </section>
 
       <section id="step-audio" class="hidden">
-        <p class="step-heading">Укажите номера аудио</p>
+        <p class="step-heading" data-i18n="ui.audio.heading">Укажите номера аудио</p>
 
         <label class="field">
-          <span>Укажите номер аудио</span>
+          <span data-i18n="ui.audio.singleLabel">Укажите номер аудио</span>
           <input
             id="audio-single"
             type="text"
             inputmode="numeric"
             autocomplete="off"
+            data-i18n-placeholder="ui.audio.singlePlaceholder"
             placeholder="Например, 24"
           />
         </label>
 
-        <button type="button" id="download-all-btn" class="btn-secondary">Скачать все аудио</button>
+        <button
+          type="button"
+          id="preview-audio-btn"
+          class="btn-secondary"
+          data-i18n="ui.audio.previewListen"
+          disabled
+        >
+          Прослушать аудио
+        </button>
+
+        <div id="audio-player-wrap" class="audio-player-wrap hidden">
+          <audio id="audio-player" controls preload="metadata"></audio>
+        </div>
+
+        <button type="button" id="download-all-btn" class="btn-secondary" data-i18n="ui.audio.downloadAll">
+          Скачать все аудио
+        </button>
 
         <div id="audio-range-fields" class="hidden">
           <div class="field field-range">
-            <span class="field-range-title">Диапазон аудио</span>
+            <span class="field-range-title" data-i18n="ui.audio.rangeTitle">Диапазон аудио</span>
             <div class="range-row">
               <label class="range-cell">
-                <span>С</span>
+                <span data-i18n="ui.audio.rangeFrom">С</span>
                 <input id="audio-from" type="text" inputmode="numeric" autocomplete="off" placeholder="1" />
               </label>
               <label class="range-cell">
-                <span>По</span>
+                <span data-i18n="ui.audio.rangeTo">По</span>
                 <input id="audio-to" type="text" inputmode="numeric" autocomplete="off" placeholder="99" />
               </label>
             </div>
           </div>
         </div>
 
-        <button type="button" id="download-start-btn" class="btn-primary hidden">
+        <button type="button" id="download-start-btn" class="btn-primary hidden" data-i18n="ui.audio.startDownload">
           Начать скачивание
         </button>
 
@@ -135,11 +201,71 @@
 
         <div id="audio-status" class="status hidden" role="status" aria-live="polite"></div>
 
-        <button type="button" id="audio-back-btn" class="btn-back">Назад</button>
-        <button type="button" id="logout-btn-audio" class="btn-outline">Выход</button>
+        <button type="button" id="audio-back-btn" class="btn-back" data-i18n="ui.audio.back">Назад</button>
+        <button type="button" id="logout-btn-audio" class="btn-outline" data-i18n="ui.audio.logout">Выход</button>
       </section>
     </main>
 
+    <button type="button" id="lang-btn" class="fab-btn lang-btn" aria-label="Switch language" title="Switch language">
+      <svg class="fab-icon" aria-hidden="true"><use href="#icon-lang"></use></svg>
+      <span class="lang-btn-label">EN</span>
+    </button>
+
+    <button
+      type="button"
+      id="update-notice"
+      class="fab-btn update-notice hidden"
+      data-i18n-aria="ui.update.aria"
+      data-i18n-title="ui.update.aria"
+      aria-label="Open the new version download page"
+      title="Open the new version download page"
+    >
+      <svg class="fab-icon" aria-hidden="true"><use href="#icon-update"></use></svg>
+      <span class="update-notice-label" data-i18n="ui.update.available">Доступна новая версия</span>
+    </button>
+
+    <button
+      type="button"
+      id="help-btn"
+      class="fab-btn help-btn"
+      aria-label="About"
+      title="About"
+      data-i18n-aria="ui.help.about"
+      data-i18n-title="ui.help.about"
+    >
+      <svg class="fab-icon" aria-hidden="true"><use href="#icon-help"></use></svg>
+      <span class="visually-hidden" data-i18n="ui.help.about">О программе</span>
+    </button>
+
+    <div id="help-modal" class="help-modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+      <button
+        type="button"
+        id="help-modal-backdrop"
+        class="help-modal-backdrop"
+        aria-label="Close"
+        data-i18n-aria="ui.help.close"
+      ></button>
+      <div class="help-modal-panel">
+        <div class="help-modal-header">
+          <img class="help-modal-logo" src="assets/logo-header.png" width="120" height="57" alt="" />
+          <h2 id="help-modal-title" class="help-modal-title" data-i18n="ui.help.about">О программе</h2>
+        </div>
+        <p class="help-modal-version">
+          <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.1.0</span>
+        </p>
+        <p class="help-modal-link">
+          <button type="button" id="help-github-link" class="help-github-link">
+            github.com/Marfa/blinklearningdownloader
+          </button>
+        </p>
+        <button type="button" id="help-modal-close" class="btn-secondary help-modal-close" data-i18n="ui.help.close">
+          Закрыть
+        </button>
+      </div>
+    </div>
+
+    <script src="locale-data.js"></script>
+    <script src="locale-ui.js"></script>
     <script src="input-validation.js"></script>
     <script src="renderer.js"></script>
   </body>

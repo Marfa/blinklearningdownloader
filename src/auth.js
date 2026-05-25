@@ -4,6 +4,7 @@ const { SocksProxyAgent } = require('socks-proxy-agent');
 const { CookieJar } = require('tough-cookie');
 const { HttpCookieAgent, HttpsCookieAgent } = require('http-cookie-agent/http');
 const { setAuthenticatedClient } = require('./session');
+const { t, getLocale } = require('./i18n');
 
 const LAUNCH_URL =
   'https://www.blinklearning.com/v/1778658518/themes/tmpux/launch.php';
@@ -20,7 +21,7 @@ function normalizeProxy(proxy) {
   const port = Number(proxy?.port);
 
   if (!host || !Number.isFinite(port) || port < 1 || port > 65535) {
-    throw new Error('Укажите IP и порт SOCKS5 прокси (1–65535).');
+    throw new Error(t('auth.proxyInvalid', getLocale()));
   }
 
   return { enabled: true, host, port };
@@ -212,8 +213,10 @@ async function submitLogin(client, jar, email, password, formPayload) {
 }
 
 async function authenticate({ username, password, proxy }) {
+  const locale = getLocale();
+
   if (!username?.trim() || !password) {
-    throw new Error('Укажите логин и пароль.');
+    throw new Error(t('auth.credentialsRequired', locale));
   }
 
   const effectiveProxy = normalizeProxy(proxy);
@@ -223,14 +226,12 @@ async function authenticate({ username, password, proxy }) {
     const loginPage = await fetchPage(client, LOGIN_URL);
 
     if (loginPage.status >= 500) {
-      throw new Error(`Сервер вернул ошибку ${loginPage.status}. Попробуйте позже.`);
+      throw new Error(t('auth.serverError', locale, { status: loginPage.status }));
     }
 
     const parsed = parseLoginForm(loginPage.html);
     if (!parsed) {
-      throw new Error(
-        'Не удалось найти форму входа BlinkLearning. Проверьте доступ к сайту.'
-      );
+      throw new Error(t('auth.formNotFound', locale));
     }
 
     const loginResult = await submitLogin(
@@ -254,7 +255,7 @@ async function authenticate({ username, password, proxy }) {
         loginResult.hasSession
       )
     ) {
-      throw new Error('Неверный логин или пароль.');
+      throw new Error(t('auth.invalidCredentials', locale));
     }
 
     const launchResult = await fetchPage(client, LAUNCH_URL);
@@ -264,12 +265,10 @@ async function authenticate({ username, password, proxy }) {
         launchResult.url.toLowerCase().includes('/login') ||
         launchResult.url.toLowerCase().includes('/loginux')
       ) {
-        throw new Error(
-          'Сессия не открыла launch.php. Проверьте логин, пароль и доступ к материалу.'
-        );
+        throw new Error(t('auth.sessionFailed', locale));
       }
       throw new Error(
-        `Не удалось открыть launch.php (код ${launchResult.status}).`
+        t('auth.launchFailed', locale, { status: launchResult.status })
       );
     }
 
@@ -277,19 +276,24 @@ async function authenticate({ username, password, proxy }) {
 
     return {
       success: true,
-      message: 'Авторизация прошла успешно.',
+      message: t('auth.success', locale),
     };
   } catch (err) {
     if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
       throw new Error(
-        `Ошибка сети: ${err.message}. Проверьте подключение${effectiveProxy.enabled ? ' и настройки прокси' : ''}.`
+        t('auth.networkError', locale, {
+          detail: err.message,
+          proxyHint: effectiveProxy.enabled
+            ? t('auth.networkErrorProxyHint', locale)
+            : '',
+        })
       );
     }
     if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
-      throw new Error(`Таймаут или разрыв соединения: ${err.message}`);
+      throw new Error(t('auth.timeout', locale, { detail: err.message }));
     }
     if (err.response?.status === 407) {
-      throw new Error('Прокси-сервер отклонил подключение (407).');
+      throw new Error(t('auth.proxyRejected', locale));
     }
     throw err;
   }

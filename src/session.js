@@ -1,4 +1,5 @@
 const { parseLessonIdOrUrl } = require('./lesson');
+const { t, getLocale } = require('./i18n');
 
 const session = {
   lessonId: null,
@@ -19,8 +20,7 @@ function setLessonInput(rawInput) {
   if (!lessonId) {
     return {
       ok: false,
-      message:
-        'Укажите ID урока, ссылку или цифры после последнего слеша в адресе.',
+      message: t('session.lessonInvalid', getLocale()),
     };
   }
 

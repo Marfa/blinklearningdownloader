@@ -24,6 +24,7 @@ function readSettings() {
 
 function defaultSettings() {
   return {
+    locale: 'ru',
     proxy: { ...DEFAULT_PROXY },
     rememberLogin: false,
     credentials: null,
@@ -35,7 +36,9 @@ function defaultSettings() {
 
 function normalizeSettings(data) {
   const base = defaultSettings();
+  const locale = data?.locale === 'en' ? 'en' : 'ru';
   return {
+    locale,
     proxy: {
       enabled: Boolean(data?.proxy?.enabled),
       host: String(data?.proxy?.host ?? base.proxy.host).trim(),
@@ -90,6 +93,10 @@ function saveSettings(partial) {
 
   if (Object.prototype.hasOwnProperty.call(partial, 'lastDownloadDir')) {
     next.lastDownloadDir = partial.lastDownloadDir;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(partial, 'locale')) {
+    next.locale = partial.locale === 'en' ? 'en' : 'ru';
   }
 
   writeSettings(next);

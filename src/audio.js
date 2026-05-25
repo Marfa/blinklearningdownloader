@@ -1,7 +1,9 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const cheerio = require('cheerio');
 const { createProxyDownloadClient } = require('./auth');
+const { t, getLocale, formatBytes } = require('./i18n');
 
 const AUDIO_BASE_URL = 'https://www.blinklearning.com/useruploads/r/a';
 const LAUNCH_REFERER =
@@ -14,14 +16,8 @@ const MIN_MP3_BYTES = 50 * 1024;
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-function formatBytes(n) {
-  if (!n || n < 0) return '0 Б';
-  if (n < 1024) return `${n} Б`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} КБ`;
-  return `${(n / (1024 * 1024)).toFixed(1)} МБ`;
-}
-
 function emitDownloadProgress(onProgress, received, total) {
+  const locale = getLocale();
   const payload = {
     phase: 'download',
     received,
@@ -29,9 +25,15 @@ function emitDownloadProgress(onProgress, received, total) {
   };
   if (total > 0) {
     payload.percent = Math.min(100, Math.round((received / total) * 100));
-    payload.message = `Скачивание… ${payload.percent}% (${formatBytes(received)} / ${formatBytes(total)})`;
+    payload.message = t('audio.downloadProgress', locale, {
+      percent: payload.percent,
+      received: formatBytes(received, locale),
+      total: formatBytes(total, locale),
+    });
   } else if (received > 0) {
-    payload.message = `Скачивание… ${formatBytes(received)}`;
+    payload.message = t('audio.downloadProgressBytes', locale, {
+      received: formatBytes(received, locale),
+    });
   }
   onProgress?.(payload);
 }
@@ -54,17 +56,19 @@ function buildAudioUrl(lessonId, pistaName) {
 }
 
 function resolveTrackNumbers({ single, rangeFrom, rangeTo, useRange }) {
+  const locale = getLocale();
+
   if (useRange) {
     const from = Number(rangeFrom);
     const to = Number(rangeTo);
     if (!Number.isFinite(from) || !Number.isFinite(to)) {
-      return { ok: false, message: 'Укажите номер первого и последнего аудио.' };
+      return { ok: false, message: t('audio.rangeRequired', locale) };
     }
     if (from > to) {
-      return { ok: false, message: 'Номер первого аудио не может быть больше последнего.' };
+      return { ok: false, message: t('audio.rangeInvalid', locale) };
     }
     if (to - from > 500) {
-      return { ok: false, message: 'Слишком большой диапазон (максимум 500 файлов).' };
+      return { ok: false, message: t('audio.rangeTooLarge', locale) };
     }
     const tracks = [];
     for (let i = from; i <= to; i += 1) tracks.push(i);
@@ -73,7 +77,7 @@ function resolveTrackNumbers({ single, rangeFrom, rangeTo, useRange }) {
 
   const one = Number(single);
   if (!Number.isFinite(one)) {
-    return { ok: false, message: 'Укажите номер аудио.' };
+    return { ok: false, message: t('audio.numberRequired', locale) };
   }
   return { ok: true, tracks: [one] };
 }
@@ -111,12 +115,13 @@ function extractMp3UrlsFromHtml(html, baseUrl) {
 }
 
 async function resolveDownloadUrl(client, startUrl, onProgress) {
+  const locale = getLocale();
   let url = startUrl;
 
   for (let hop = 0; hop < MAX_REDIRECTS; hop += 1) {
     onProgress?.({
       phase: 'resolve',
-      message: `Получение ссылки (${hop + 1})…`,
+      message: t('audio.resolveLink', locale, { hop: hop + 1 }),
     });
 
     const head = await client.request({
@@ -174,7 +179,7 @@ async function resolveDownloadUrl(client, startUrl, onProgress) {
     break;
   }
 
-  return { ok: false, message: 'Не удалось получить прямую ссылку на MP3.' };
+  return { ok: false, message: t('audio.mp3LinkFailed', locale) };
 }
 
 function typeLooksLikeAudio(contentType) {
@@ -202,12 +207,13 @@ function pickDownloadClient(authClient, url, proxy, cdnClientCache) {
 }
 
 function formatDownloadError(err) {
-  const msg = err?.message || 'Неизвестная ошибка';
+  const locale = getLocale();
+  const msg = err?.message || t('audio.unknownError', locale);
   if (/premature close/i.test(msg)) {
-    return 'Соединение закрылось до завершения загрузки. Повторите или проверьте прокси.';
+    return t('audio.prematureClose', locale);
   }
   if (/ECONNRESET|ETIMEDOUT|socket hang up|aborted/i.test(msg)) {
-    return `Соединение прервано (${msg}). Проверьте интернет и прокси.`;
+    return t('audio.connectionAborted', locale, { detail: msg });
   }
   if (/остановилось|таймаут|timeout/i.test(msg)) {
     return msg;
@@ -242,15 +248,15 @@ async function downloadWithClient(authClient, url, destPath, onProgress, proxy) 
     },
   });
 
+  const locale = getLocale();
+
   if (response.status !== 200) {
-    throw new Error(`HTTP ${response.status} при скачивании файла.`);
+    throw new Error(t('audio.httpDownloadError', locale, { status: response.status }));
   }
 
   const contentType = String(response.headers['content-type'] || '').toLowerCase();
   if (contentType.includes('text/html')) {
-    throw new Error(
-      'Сервер вернул страницу вместо MP3. Проверьте вход и доступ к уроку.'
-    );
+    throw new Error(t('audio.htmlInsteadOfMp3', locale));
   }
 
   const data = Buffer.from(response.data || []);
@@ -261,7 +267,7 @@ async function downloadWithClient(authClient, url, destPath, onProgress, proxy) 
 
   if (size < MIN_MP3_BYTES) {
     throw new Error(
-      `Файл слишком маленький (${formatBytes(size)}). Возможно, ссылка устарела или прокси обрывает загрузку.`
+      t('audio.fileTooSmall', locale, { size: formatBytes(size, locale) })
     );
   }
 
@@ -272,11 +278,16 @@ async function downloadWithClient(authClient, url, destPath, onProgress, proxy) 
 async function downloadResolvedFile(authClient, resolveUrl, destPath, onProgress, proxy) {
   let lastError;
 
+  const locale = getLocale();
+
   for (let attempt = 1; attempt <= DOWNLOAD_RETRIES; attempt += 1) {
     try {
       onProgress?.({
         phase: 'download',
-        message: `Скачивание${attempt > 1 ? ` (попытка ${attempt})` : ''}…`,
+        message: t('audio.downloadRetry', locale, {
+          attempt:
+            attempt > 1 ? t('audio.downloadRetryAttempt', locale, { attempt }) : '',
+        }),
         percent: 0,
       });
 
@@ -300,6 +311,7 @@ async function downloadResolvedFile(authClient, resolveUrl, destPath, onProgress
 }
 
 async function downloadOneTrack(client, lessonId, trackNumber, destDir, onProgress, proxy) {
+  const locale = getLocale();
   fs.mkdirSync(destDir, { recursive: true });
   const tried = [];
   let lastError = null;
@@ -312,7 +324,7 @@ async function downloadOneTrack(client, lessonId, trackNumber, destDir, onProgre
       phase: 'track',
       trackNumber,
       pista,
-      message: `Аудио ${trackNumber}: ${pista}…`,
+      message: t('audio.trackProgress', locale, { track: trackNumber, pista }),
     });
 
     try {
@@ -365,11 +377,59 @@ async function downloadOneTrack(client, lessonId, trackNumber, destDir, onProgre
     ok: false,
     trackNumber,
     tried,
-    message: `Аудио ${trackNumber} недоступно${lastError ? `: ${lastError.message}` : ''}.`,
+    message: t('audio.trackUnavailable', locale, {
+      track: trackNumber,
+      detail: lastError
+        ? t('audio.trackUnavailableDetail', locale, { detail: lastError.message })
+        : '',
+    }),
+  };
+}
+
+function getPreviewDir() {
+  return path.join(os.tmpdir(), 'blinklearning-preview');
+}
+
+function clearPreviewFiles(dir) {
+  try {
+    for (const name of fs.readdirSync(dir)) {
+      if (name.endsWith('.mp3')) {
+        fs.unlinkSync(path.join(dir, name));
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+async function prepareTrackPreview(client, lessonId, trackNumber, onProgress, proxy) {
+  const previewDir = getPreviewDir();
+  fs.mkdirSync(previewDir, { recursive: true });
+  clearPreviewFiles(previewDir);
+
+  const result = await downloadOneTrack(
+    client,
+    lessonId,
+    trackNumber,
+    previewDir,
+    onProgress,
+    proxy
+  );
+
+  if (!result.ok) {
+    return result;
+  }
+
+  return {
+    ok: true,
+    filePath: result.filePath,
+    trackNumber: result.trackNumber,
+    pista: result.pista,
   };
 }
 
 async function downloadTracks(client, lessonId, tracks, destDir, onProgress, proxy) {
+  const locale = getLocale();
   fs.mkdirSync(destDir, { recursive: true });
   const results = [];
 
@@ -381,7 +441,10 @@ async function downloadTracks(client, lessonId, tracks, destDir, onProgress, pro
       index: i + 1,
       total: tracks.length,
       trackNumber,
-      message: `Файл ${i + 1} из ${tracks.length}`,
+      message: t('audio.fileProgress', locale, {
+        index: i + 1,
+        total: tracks.length,
+      }),
       percent: Math.round((i / tracks.length) * 100),
     });
 
@@ -409,8 +472,8 @@ async function downloadTracks(client, lessonId, tracks, destDir, onProgress, pro
       result,
       percent: Math.round(((i + 1) / tracks.length) * 100),
       message: result.ok
-        ? `Готово: ${result.pista}.mp3`
-        : `Ошибка: аудио ${trackNumber}`,
+        ? t('audio.trackDone', locale, { pista: result.pista })
+        : t('audio.trackError', locale, { track: trackNumber }),
     });
   }
 
@@ -422,11 +485,15 @@ async function downloadTracks(client, lessonId, tracks, destDir, onProgress, pro
 
   let message;
   if (failed === 0) {
-    message = `Скачано файлов: ${downloaded}.`;
+    message = t('audio.summaryDownloaded', locale, { count: downloaded });
   } else if (downloaded === 0) {
-    message = errorLines[0] || 'Не удалось скачать аудио.';
+    message = errorLines[0] || t('audio.summaryFailed', locale);
   } else {
-    message = `Скачано: ${downloaded}, ошибок: ${failed}. ${errorLines[0] || ''}`.trim();
+    message = t('audio.summaryPartial', locale, {
+      downloaded,
+      failed,
+      detail: errorLines[0] || '',
+    }).trim();
   }
 
   return {
@@ -450,4 +517,5 @@ module.exports = {
   resolveDownloadUrl,
   downloadOneTrack,
   downloadTracks,
+  prepareTrackPreview,
 };
