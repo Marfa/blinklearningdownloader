@@ -10,12 +10,14 @@
 
 | Платформа | Файл | Описание |
 |-----------|------|----------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.0.exe` | Установщик (NSIS) |
-| Windows | `BlinkLearning-Downloader-1.1.0-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
-| Windows | `BlinkLearning-Downloader-1.1.0-win-x64.zip` | Архив распакованной папки (portable) |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.0-mac-arm64.zip` | Приложение `.app` в архиве |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.1.exe` | Установщик (NSIS) |
+| Windows | `BlinkLearning-Downloader-1.1.1-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
+| Windows | `BlinkLearning-Downloader-1.1.1-win-x64.zip` | Архив распакованной папки (portable) |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.1-mac-arm64.zip` | Приложение `.app` в архиве |
 
-> **Android:** в версии 1.1.0 нет мобильной сборки — проект основан на Electron для настольных ОС.
+> **Android:** мобильной сборки нет — проект основан на Electron для настольных ОС.
+
+История изменений — в [CHANGELOG.md](CHANGELOG.md).
 
 ## Возможности
 

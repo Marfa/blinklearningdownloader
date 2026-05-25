@@ -10,12 +10,14 @@ Latest builds are on [GitHub Releases](https://github.com/Marfa/blinklearningdow
 
 | Platform | File | Description |
 |----------|------|-------------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.0.exe` | NSIS installer |
-| Windows | `BlinkLearning-Downloader-1.1.0-win-x64-portable.exe` | Portable single `.exe` (no install) |
-| Windows | `BlinkLearning-Downloader-1.1.0-win-x64.zip` | Zipped unpacked folder |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.0-mac-arm64.zip` | `.app` bundle in a zip |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.1.exe` | NSIS installer |
+| Windows | `BlinkLearning-Downloader-1.1.1-win-x64-portable.exe` | Portable single `.exe` (no install) |
+| Windows | `BlinkLearning-Downloader-1.1.1-win-x64.zip` | Zipped unpacked folder |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.1-mac-arm64.zip` | `.app` bundle in a zip |
 
-> **Android:** there is no mobile build in 1.1.0 — this project uses Electron for desktop OS only.
+> **Android:** there is no mobile build — this project uses Electron for desktop OS only.
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Features
 

@@ -8,7 +8,7 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlinkLearning</title>
-    <link rel="icon" type="image/png" href="assets/logo-header.png" />
+    <link rel="icon" type="image/png" href="../../assets/icons/icon-256.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -34,14 +34,10 @@
     </svg>
     <main class="card">
       <header class="app-header">
-        <img
-          class="app-logo"
-          src="assets/logo-header.png"
-          width="212"
-          height="100"
-          alt="BlinkLearning"
-        />
-        <h1>BlinkLearning</h1>
+        <div class="app-brand" role="img" aria-label="BlinkLearning">
+          <span class="app-brand-blink" aria-hidden="true">blink</span>
+          <span class="app-brand-learning" aria-hidden="true">Learning</span>
+        </div>
         <p id="subtitle" class="subtitle" data-i18n="ui.login.subtitle">Вход на blinklearning.com</p>
       </header>
 
@@ -247,11 +243,14 @@
       ></button>
       <div class="help-modal-panel">
         <div class="help-modal-header">
-          <img class="help-modal-logo" src="assets/logo-header.png" width="120" height="57" alt="" />
+          <div class="app-brand app-brand--compact" role="img" aria-label="BlinkLearning">
+            <span class="app-brand-blink" aria-hidden="true">blink</span>
+            <span class="app-brand-learning" aria-hidden="true">Learning</span>
+          </div>
           <h2 id="help-modal-title" class="help-modal-title" data-i18n="ui.help.about">О программе</h2>
         </div>
         <p class="help-modal-version">
-          <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.1.0</span>
+          <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.1.1</span>
         </p>
         <p class="help-modal-link">
           <button type="button" id="help-github-link" class="help-github-link">

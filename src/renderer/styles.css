@@ -73,23 +73,44 @@ body::before {
   border-bottom: 1px solid var(--border);
 }
 
-.app-logo {
-  display: block;
-  width: min(212px, 100%);
-  height: auto;
+.app-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin: 0 auto 12px;
+  line-height: 1;
+  user-select: none;
 }
 
-.app-header h1 {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.app-brand-blink {
+  font-size: 2.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.app-brand-learning {
+  margin-top: 4px;
+  padding-left: 2.75rem;
+  font-size: 1.375rem;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.app-brand--compact {
+  margin: 0;
+  align-items: flex-start;
+}
+
+.app-brand--compact .app-brand-blink {
+  font-size: 1.5rem;
+}
+
+.app-brand--compact .app-brand-learning {
+  font-size: 1rem;
+  padding-left: 1.85rem;
+  margin-top: 2px;
 }
 
 .subtitle {
@@ -549,11 +570,6 @@ button[type='submit']:disabled {
   align-items: center;
   gap: 12px;
   margin-bottom: 14px;
-}
-
-.help-modal-logo {
-  width: 120px;
-  height: auto;
 }
 
 .help-modal-title {
