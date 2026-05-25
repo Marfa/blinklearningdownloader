@@ -472,7 +472,7 @@ function closeHelpModal() {
 
 function loadAppVersion() {
   const version = window.blinkAuth?.getVersion?.();
-  helpVersion.textContent = version || '1.1.0';
+  helpVersion.textContent = version || '1.1.1';
 }
 
 function updateNoticeLabel() {

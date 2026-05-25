@@ -5,6 +5,7 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+NUL
 
 # Локальные настройки и артефакты отладки
 settings.json
