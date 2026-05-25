@@ -1,4 +1,6 @@
 node_modules/
+.node-local/
+release-build/
 dist/
 *.log
 .DS_Store

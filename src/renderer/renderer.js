@@ -29,12 +29,141 @@ const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
 const audioBackBtn = document.getElementById('audio-back-btn');
 const logoutBtnAudio = document.getElementById('logout-btn-audio');
+const previewAudioBtn = document.getElementById('preview-audio-btn');
+const audioPlayerWrap = document.getElementById('audio-player-wrap');
+const audioPlayer = document.getElementById('audio-player');
 
 let successHideTimer = null;
 let downloadAllMode = false;
 let removeProgressListener = null;
+let audioBusy = false;
 
 const inputValidation = window.BlinkInputValidation;
+
+function tt(key, params) {
+  if (!window.BlinkLocale?.t) return key;
+  const safeParams = params && typeof params === 'object' ? params : {};
+  return window.BlinkLocale.t(key, safeParams);
+}
+
+function resolveValidationMessage(result) {
+  if (result?.ok || !result?.messageKey) return result;
+  const params = { ...(result.messageParams || {}) };
+  if (params.field) {
+    params.field = tt(params.field);
+  }
+  return { ...result, message: tt(result.messageKey, params) };
+}
+
+function storeI18nKey(el, attr, datasetProp) {
+  const fromAttr = el.getAttribute(attr);
+  if (fromAttr && fromAttr.includes('.')) {
+    el.dataset[datasetProp] = fromAttr;
+  }
+}
+
+function cacheI18nKeys() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    storeI18nKey(el, 'data-i18n', 'i18nKey');
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    storeI18nKey(el, 'data-i18n-html', 'i18nHtmlKey');
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    storeI18nKey(el, 'data-i18n-placeholder', 'i18nPlaceholderKey');
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    storeI18nKey(el, 'data-i18n-title', 'i18nTitleKey');
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+    storeI18nKey(el, 'data-i18n-aria', 'i18nAriaKey');
+  });
+}
+
+function hasNestedI18nChild(el, attr) {
+  return [...el.querySelectorAll(attr)].some((node) => node !== el);
+}
+
+function updateLangButton() {
+  const langBtn = document.getElementById('lang-btn');
+  if (!langBtn || !window.BlinkLocale) return;
+
+  const other = window.BlinkLocale.otherLocale();
+  const label = langBtn.querySelector('.lang-btn-label');
+  const text = other === 'en' ? tt('ui.lang.switchToEn') : tt('ui.lang.switchToRu');
+  if (label) label.textContent = text;
+  else langBtn.textContent = text;
+  const switchLabel =
+    other === 'en' ? tt('ui.lang.switchAriaToEn') : tt('ui.lang.switchAriaToRu');
+  langBtn.setAttribute('aria-label', switchLabel);
+  langBtn.title = switchLabel;
+}
+
+function applyLocale() {
+  if (!window.BlinkLocale?.t) return;
+
+  try {
+    cacheI18nKeys();
+    const locale = window.BlinkLocale.getLocale() ?? 'ru';
+    document.documentElement.lang = locale;
+
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      if (hasNestedI18nChild(el, '[data-i18n]')) return;
+      const key = el.dataset.i18nKey;
+      if (key) el.textContent = tt(key);
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+      if (hasNestedI18nChild(el, '[data-i18n-html]')) return;
+      const key = el.dataset.i18nHtmlKey;
+      if (key) el.innerHTML = tt(key);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      const key = el.dataset.i18nPlaceholderKey;
+      if (key) el.placeholder = tt(key);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      const key = el.dataset.i18nTitleKey;
+      if (key) el.title = tt(key);
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+      const key = el.dataset.i18nAriaKey;
+      if (key) el.setAttribute('aria-label', tt(key));
+    });
+
+    updateLangButton();
+    updateNoticeLabel();
+
+    if (!stepLogin.classList.contains('hidden')) {
+      subtitle.textContent = tt('ui.login.subtitle');
+    }
+    if (
+      !stepLesson.classList.contains('hidden') &&
+      !stepSuccess.classList.contains('step-success--error') &&
+      !stepSuccess.classList.contains('hidden')
+    ) {
+      stepSuccess.textContent = tt('ui.lesson.authSuccess');
+    }
+  } catch (err) {
+    console.error('applyLocale failed', err);
+  }
+}
+
+async function persistLocale() {
+  if (!window.blinkAuth?.saveSettings || !window.BlinkLocale) return;
+  try {
+    await window.blinkAuth.saveSettings({ locale: window.BlinkLocale.getLocale() });
+  } catch (err) {
+    console.error('save locale failed', err);
+  }
+}
+
+function onLangButtonClick() {
+  if (!window.BlinkLocale?.toggleLocale) return;
+
+  window.BlinkLocale.toggleLocale();
+  applyLocale();
+  persistLocale();
+}
 
 function getProxyFromForm() {
   return {
@@ -114,6 +243,13 @@ function handleProgressUpdate(payload) {
     received,
   } = payload;
 
+  if (payload.preview) {
+    if (message) {
+      showAudioStatus(message, phase === 'error' ? 'error' : 'success');
+    }
+    return;
+  }
+
   if (phase === 'error' && message) {
     showDownloadProgress(message, percent ?? 0);
     showAudioStatus(message, 'error');
@@ -121,12 +257,17 @@ function handleProgressUpdate(payload) {
   }
 
   let text = message || '';
-  if (!text && phase === 'resolve') text = 'Получение ссылки на файл…';
-  if (!text && phase === 'download') text = 'Скачивание…';
+  if (!text && phase === 'resolve') text = tt('progress.resolveLink');
+  if (!text && phase === 'download') text = tt('progress.downloading');
   if (!text && phase === 'track' && trackNumber) {
-    text = `Аудио ${trackNumber}${pista ? ` (${pista})` : ''}…`;
+    text = tt('progress.track', {
+      track: trackNumber,
+      pista: pista ? ` (${pista})` : '',
+    });
   }
-  if (!text && index && total) text = `Файл ${index} из ${total}`;
+  if (!text && index && total) {
+    text = tt('progress.fileOf', { index, total });
+  }
 
   let pct = percent;
   if (pct === undefined && index && total && phase !== 'download') {
@@ -139,6 +280,13 @@ function handleProgressUpdate(payload) {
   showDownloadProgress(text, pct ?? 0);
 }
 
+function stopAudioPreview() {
+  audioPlayer.pause();
+  audioPlayer.removeAttribute('src');
+  audioPlayer.load();
+  audioPlayerWrap.classList.add('hidden');
+}
+
 function resetAudioForm() {
   downloadAllMode = false;
   audioSingle.value = '';
@@ -146,7 +294,13 @@ function resetAudioForm() {
   audioTo.value = '';
   audioRangeFields.classList.add('hidden');
   downloadStartBtn.classList.add('hidden');
+  stopAudioPreview();
   clearAudioStatus();
+  updateAudioActionButtons();
+}
+
+function canPreviewAudio() {
+  return /^\d+$/.test(audioSingle.value.trim());
 }
 
 function canStartDownload() {
@@ -163,34 +317,44 @@ function canStartDownload() {
 function validateAudioDownloadInput() {
   const single = audioSingle.value.trim();
   if (single) {
-    return inputValidation.validateDigitsField(single, 'номер аудио');
+    return resolveValidationMessage(
+      inputValidation.validateDigitsField(single, 'validation.label.audioNumber')
+    );
   }
   if (downloadAllMode) {
-    const fromResult = inputValidation.validateDigitsField(audioFrom.value, 'номер «С»');
+    const fromResult = resolveValidationMessage(
+      inputValidation.validateDigitsField(audioFrom.value, 'validation.label.rangeFrom')
+    );
     if (!fromResult.ok) return fromResult;
-    const toResult = inputValidation.validateDigitsField(audioTo.value, 'номер «По»');
+    const toResult = resolveValidationMessage(
+      inputValidation.validateDigitsField(audioTo.value, 'validation.label.rangeTo')
+    );
     if (!toResult.ok) return toResult;
     if (Number(fromResult.value) > Number(toResult.value)) {
-      return {
-        ok: false,
-        message: 'Номер «С» не может быть больше номера «По».',
-      };
+      return { ok: false, message: tt('validation.rangeFromGtTo') };
     }
     return { ok: true };
   }
-  return { ok: false, message: 'Укажите номер аудио или диапазон.' };
+  return { ok: false, message: tt('validation.audioOrRange') };
 }
 
 function updateDownloadStartVisibility() {
   downloadStartBtn.classList.toggle('hidden', !canStartDownload());
 }
 
-function setDownloadControlsEnabled(enabled) {
+function updateAudioActionButtons() {
+  previewAudioBtn.disabled = !canPreviewAudio() || audioBusy;
+  updateDownloadStartVisibility();
+}
+
+function setAudioControlsEnabled(enabled) {
+  audioBusy = !enabled;
   downloadStartBtn.disabled = !enabled;
   downloadAllBtn.disabled = !enabled;
   audioSingle.disabled = !enabled;
   audioFrom.disabled = !enabled;
   audioTo.disabled = !enabled;
+  updateAudioActionButtons();
 }
 
 async function restoreLessonInput() {
@@ -204,7 +368,7 @@ function showLoginStep(clearCredentials = false) {
   hideAllSteps();
   stepLogin.classList.remove('hidden');
   subtitle.classList.remove('hidden');
-  subtitle.textContent = 'Вход на blinklearning.com';
+  subtitle.textContent = tt('ui.login.subtitle');
 
   if (clearCredentials) {
     document.getElementById('username').value = '';
@@ -217,7 +381,7 @@ function showLoginStep(clearCredentials = false) {
   instructionPanel.classList.add('hidden');
   instructionToggle.setAttribute('aria-expanded', 'false');
   if (successHideTimer) clearTimeout(successHideTimer);
-  stepSuccess.textContent = 'Авторизация прошла успешно.';
+  stepSuccess.textContent = tt('ui.lesson.authSuccess');
   stepSuccess.classList.remove('hidden');
 }
 
@@ -264,6 +428,10 @@ async function loadSavedSettings() {
     document.getElementById('password').value = settings.credentials.password;
   }
 
+  if (settings.locale) {
+    window.BlinkLocale?.setLocale(settings.locale);
+  }
+  applyLocale();
 }
 
 async function saveAuthSettings(username, password) {
@@ -280,7 +448,103 @@ async function handleLogout() {
   showLoginStep(true);
 }
 
+const GITHUB_REPO_URL = 'https://github.com/Marfa/blinklearningdownloader';
+const GITHUB_RELEASES_URL = 'https://github.com/Marfa/blinklearningdownloader/releases';
+
+const updateNotice = document.getElementById('update-notice');
+const helpBtn = document.getElementById('help-btn');
+const helpModal = document.getElementById('help-modal');
+const helpVersion = document.getElementById('help-version');
+const helpGithubLink = document.getElementById('help-github-link');
+const helpModalClose = document.getElementById('help-modal-close');
+const helpModalBackdrop = document.getElementById('help-modal-backdrop');
+
+function openHelpModal() {
+  loadAppVersion();
+  helpModal.classList.remove('hidden');
+  helpModalClose.focus();
+}
+
+function closeHelpModal() {
+  helpModal.classList.add('hidden');
+  helpBtn.focus();
+}
+
+function loadAppVersion() {
+  const version = window.blinkAuth?.getVersion?.();
+  helpVersion.textContent = version || '1.1.0';
+}
+
+function updateNoticeLabel() {
+  if (!updateNotice || updateNotice.classList.contains('hidden')) return;
+  const version = updateNotice.dataset.latestVersion;
+  if (!version) return;
+  const label = updateNotice.querySelector('.update-notice-label');
+  const text = tt('ui.update.available', { version });
+  if (label) label.textContent = text;
+  else updateNotice.textContent = text;
+  const aria = tt('ui.update.aria');
+  updateNotice.setAttribute('aria-label', aria);
+  updateNotice.title = aria;
+}
+
+async function checkAppUpdate() {
+  if (!updateNotice || !window.blinkAuth?.checkForUpdate) return;
+
+  try {
+    const result = await window.blinkAuth.checkForUpdate();
+    if (result.ok && result.updateAvailable && result.latestVersion) {
+      updateNotice.dataset.latestVersion = result.latestVersion;
+      updateNotice.classList.remove('hidden');
+      updateNoticeLabel();
+    }
+  } catch (err) {
+    console.error('checkForUpdate failed', err);
+  }
+}
+
+if (updateNotice) {
+  updateNotice.addEventListener('click', () => {
+    window.blinkAuth?.openExternal?.(GITHUB_RELEASES_URL);
+  });
+}
+
+helpBtn.addEventListener('click', openHelpModal);
+helpModalClose.addEventListener('click', closeHelpModal);
+helpModalBackdrop.addEventListener('click', closeHelpModal);
+
+helpGithubLink.addEventListener('click', () => {
+  window.blinkAuth?.openExternal?.(GITHUB_REPO_URL);
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !helpModal.classList.contains('hidden')) {
+    closeHelpModal();
+  }
+});
+
+function initFloatingButtons() {
+  const langBtn = document.getElementById('lang-btn');
+  if (langBtn) {
+    langBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onLangButtonClick();
+    });
+  }
+}
+
+cacheI18nKeys();
+initFloatingButtons();
+
+if (!window.blinkAuth?.login) {
+  showStatus(tt('renderer.initError'), 'error');
+  submitBtn.disabled = true;
+}
+
 loadSavedSettings();
+loadAppVersion();
+checkAppUpdate();
 
 useProxy.addEventListener('change', () => {
   proxyFields.classList.toggle('hidden', !useProxy.checked);
@@ -299,7 +563,7 @@ inputValidation.bindLessonInput(lessonInput, updateLessonNextVisibility);
 
 lessonNextBtn.addEventListener('click', async () => {
   const raw = lessonInput.value.trim();
-  const check = inputValidation.validateLessonInput(raw);
+  const check = resolveValidationMessage(inputValidation.validateLessonInput(raw));
   if (!check.ok) {
     stepSuccess.textContent = check.message;
     stepSuccess.classList.remove('hidden');
@@ -311,7 +575,7 @@ lessonNextBtn.addEventListener('click', async () => {
 
   const result = await window.blinkAuth.setLesson(raw);
   if (!result?.ok) {
-    stepSuccess.textContent = result?.message || 'Не удалось определить ID урока.';
+    stepSuccess.textContent = result?.message || tt('renderer.lessonIdFailed');
     stepSuccess.classList.add('step-success--error');
     stepSuccess.classList.remove('hidden');
     if (successHideTimer) clearTimeout(successHideTimer);
@@ -331,23 +595,67 @@ audioBackBtn.addEventListener('click', async () => {
   showLessonStep(false);
 });
 
-downloadAllBtn.addEventListener('click', () => {
-  downloadAllMode = true;
-  audioRangeFields.classList.remove('hidden');
-  updateDownloadStartVisibility();
-});
-
 function onAudioSingleInput() {
   if (audioSingle.value.trim()) {
     downloadAllMode = false;
     audioRangeFields.classList.add('hidden');
+  } else {
+    stopAudioPreview();
   }
-  updateDownloadStartVisibility();
+  updateAudioActionButtons();
 }
 
 inputValidation.bindDigitsOnlyInput(audioSingle, onAudioSingleInput);
-inputValidation.bindDigitsOnlyInput(audioFrom, updateDownloadStartVisibility);
-inputValidation.bindDigitsOnlyInput(audioTo, updateDownloadStartVisibility);
+inputValidation.bindDigitsOnlyInput(audioFrom, () => updateAudioActionButtons());
+inputValidation.bindDigitsOnlyInput(audioTo, () => updateAudioActionButtons());
+
+previewAudioBtn.addEventListener('click', async () => {
+  clearAudioStatus();
+  hideDownloadProgress();
+
+  const audioCheck = resolveValidationMessage(
+    inputValidation.validateDigitsField(audioSingle.value, 'validation.label.audioNumber')
+  );
+  if (!audioCheck.ok) {
+    showAudioStatus(audioCheck.message, 'error');
+    return;
+  }
+
+  const trackNumber = audioCheck.value;
+  stopAudioPreview();
+  setAudioControlsEnabled(false);
+  showAudioStatus(tt('ui.audio.previewLoading'), 'success');
+
+  try {
+    const result = await window.blinkAuth?.previewAudio?.(trackNumber);
+    if (!result?.ok) {
+      showAudioStatus(result?.message || tt('main.previewError'), 'error');
+      return;
+    }
+
+    const mediaUrl = window.blinkAuth?.toMediaUrl?.(result.filePath);
+    if (!mediaUrl) {
+      showAudioStatus(tt('main.previewError'), 'error');
+      return;
+    }
+
+    audioPlayer.src = mediaUrl;
+    audioPlayerWrap.classList.remove('hidden');
+    showAudioStatus(tt('ui.audio.previewNow', { track: trackNumber }), 'success');
+    await audioPlayer.play();
+  } catch (err) {
+    showAudioStatus(err.message || tt('main.previewError'), 'error');
+  } finally {
+    setAudioControlsEnabled(true);
+  }
+});
+
+downloadAllBtn.addEventListener('click', () => {
+  downloadAllMode = true;
+  audioRangeFields.classList.remove('hidden');
+  stopAudioPreview();
+  updateAudioActionButtons();
+});
 
 downloadStartBtn.addEventListener('click', async () => {
   clearAudioStatus();
@@ -358,8 +666,9 @@ downloadStartBtn.addEventListener('click', async () => {
     return;
   }
 
-  showDownloadProgress('Выбор папки…', 0);
-  setDownloadControlsEnabled(false);
+  showDownloadProgress(tt('renderer.chooseFolder'), 0);
+  stopAudioPreview();
+  setAudioControlsEnabled(false);
 
   try {
     const result = await window.blinkAuth.downloadAudio({
@@ -371,28 +680,27 @@ downloadStartBtn.addEventListener('click', async () => {
 
     if (result.canceled) {
       hideDownloadProgress();
-      showAudioStatus('Скачивание отменено.', 'error');
+      showAudioStatus(tt('renderer.downloadCanceled'), 'error');
       return;
     }
 
     if (result.ok) {
-      showDownloadProgress('Готово', 100);
+      showDownloadProgress(tt('renderer.done'), 100);
       const type = result.failed > 0 ? 'error' : 'success';
       showAudioStatus(result.message, type);
     } else {
-      showDownloadProgress('Ошибка', 0);
+      showDownloadProgress(tt('renderer.error'), 0);
       const detail =
         result.errors?.join(' ') ||
         result.message ||
-        'Не удалось скачать аудио.';
+        tt('renderer.downloadFailed');
       showAudioStatus(detail, 'error');
     }
   } catch (err) {
-    showDownloadProgress('Ошибка', 0);
-    showAudioStatus(err.message || 'Ошибка скачивания.', 'error');
+    showDownloadProgress(tt('renderer.error'), 0);
+    showAudioStatus(err.message || tt('renderer.downloadError'), 'error');
   } finally {
-    setDownloadControlsEnabled(true);
-    updateDownloadStartVisibility();
+    setAudioControlsEnabled(true);
   }
 });
 
@@ -419,7 +727,7 @@ form.addEventListener('submit', async (event) => {
   const proxy = getProxyFromForm();
 
   if (proxy.enabled && (!proxy.host || !proxy.port)) {
-    showStatus('Укажите IP и порт SOCKS5 прокси.', 'error');
+    showStatus(tt('renderer.proxyRequired'), 'error');
     return;
   }
 
@@ -428,10 +736,7 @@ form.addEventListener('submit', async (event) => {
   submitBtn.disabled = true;
 
   if (!window.blinkAuth?.login) {
-    showStatus(
-      'Ошибка инициализации. Закройте приложение и запустите снова через npm start.',
-      'error'
-    );
+    showStatus(tt('renderer.initError'), 'error');
     submitBtn.disabled = false;
     return;
   }
@@ -442,10 +747,10 @@ form.addEventListener('submit', async (event) => {
       await saveAuthSettings(username, password);
       showLessonStep(true);
     } else {
-      showStatus(result.message || 'Ошибка авторизации.', 'error');
+      showStatus(result.message || tt('renderer.authFailed'), 'error');
     }
   } catch (err) {
-    showStatus(err.message || 'Неизвестная ошибка.', 'error');
+    showStatus(err.message || tt('renderer.unknownError'), 'error');
   } finally {
     submitBtn.disabled = false;
   }

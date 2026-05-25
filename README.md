@@ -1,43 +1,77 @@
 # BlinkLearning Downloader
 
-Десктопное приложение для Windows: вход на [blinklearning.com](https://www.blinklearning.com), указание урока и скачивание MP3-аудио (один трек или диапазон). Поддерживается SOCKS5-прокси.
+[English version](README.en.md)
 
-Учётные данные и параметры прокси **не зашиты в код** — вводятся в интерфейсе и при желании сохраняются локально в профиле пользователя (`%APPDATA%`).
+Десктопное приложение для **Windows** и **macOS** (Apple Silicon): вход на [blinklearning.com](https://www.blinklearning.com), указание урока и скачивание MP3-аудио (один трек или диапазон). Поддерживается SOCKS5-прокси. Интерфейс на **русском** и **английском** языках, оформление в стиле BlinkLearning.
 
-**Скачать:** [релиз v1.0.0](https://github.com/Marfa/blinklearningdownloader/releases/latest) — установщик `BlinkLearning-Downloader-Setup-1.0.0.exe`.
+## Скачать
+
+Актуальные сборки — на странице [релизов GitHub](https://github.com/Marfa/blinklearningdownloader/releases/latest).
+
+| Платформа | Файл | Описание |
+|-----------|------|----------|
+| Windows | `BlinkLearning-Downloader-Setup-1.1.0.exe` | Установщик (NSIS) |
+| Windows | `BlinkLearning-Downloader-1.1.0-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
+| Windows | `BlinkLearning-Downloader-1.1.0-win-x64.zip` | Архив распакованной папки (portable) |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.0-mac-arm64.zip` | Приложение `.app` в архиве |
+
+> **Android:** в версии 1.1.0 нет мобильной сборки — проект основан на Electron для настольных ОС.
 
 ## Возможности
+
+![Интерфейс приложения: вход, выбор урока, скачивание аудио](docs/app-screenshot.png)
 
 1. **Вход** — логин и пароль BlinkLearning, опционально «Запомнить логин-пароль».
 2. **Прокси** — опциональный SOCKS5 (IP и порт задаёт пользователь).
 3. **Урок** — ID урока (только цифры) или полная ссылка из браузера; ID извлекается из цифр после последнего `/` в URL.
 4. **Аудио** — один номер или диапазон «С»–«По»; в полях допускаются только цифры.
-5. **Скачивание** — выбор папки (по умолчанию «Загрузки» или последняя выбранная), отображение прогресса.
-6. Кнопки скачивания недоступны, пока идёт загрузка.
+5. **Прослушивание** — воспроизведение одного трека в приложении (если указан номер аудио).
+6. **Скачивание** — выбор папки (по умолчанию «Загрузки» или последняя выбранная), отображение прогресса.
+7. Кнопки скачивания и прослушивания недоступны, пока идёт загрузка или подготовка воспроизведения.
+8. **Язык** — переключение русский / английский; выбор сохраняется локально.
+9. **Обновления** — при выходе новой версии на [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases) показывается уведомление внизу окна.
+10. **О программе** — версия и ссылка на репозиторий.
 
 Формат файлов на CDN: `PISTA06.mp3`, `PISTA24.mp3` и т.д. в каталоге урока на `blinklearning.com`.
+
+### Что нового в 1.1.0
+
+- Поддержка **macOS** (arm64).
+- Оформление и иконки в стиле [BlinkLearning](https://www.blinklearning.com/).
+- Переключение языка RU/EN в интерфейсе (сохранение в настройках).
+- Прослушивание аудио в приложении.
+- Уведомление о доступной новой версии на GitHub.
+- Исправлена авторизация на macOS (preload / мост IPC).
+- Лицензия **CC BY-NC-SA 4.0**.
 
 ## Запуск в режиме разработки
 
 ```bash
 npm install
+npm run sync:locale
 npm start
 ```
 
-## Сборка установщика (Windows)
+## Сборка
+
+**Windows** (установщик + portable + zip):
 
 ```bash
 npm install
-npm run dist
+npm run dist:win
 ```
 
-Артефакты сборки: `C:\Temp\blinklearningdownloader-build\`. Установщик в корне `C:\Temp\`:
+**macOS** (Apple Silicon):
 
 ```bash
-npm run dist:temp
+npm run dist:mac
 ```
 
-Пользователю достаточно запустить `.exe` из [релиза](https://github.com/Marfa/blinklearningdownloader/releases) — Node.js отдельно не нужен.
+Артефакты по умолчанию: `C:\Temp\blinklearningdownloader-build\` (Windows) или каталог из `--config.directories.output` (например `release-build/`).
+
+Пользователю достаточно скачать файл из [релиза](https://github.com/Marfa/blinklearningdownloader/releases) — Node.js отдельно не нужен.
+
+На macOS при первом запуске неподписанного `.app`: ПКМ → «Открыть» → «Открыть».
 
 ## Проверка из командной строки (без Electron UI)
 
@@ -61,10 +95,13 @@ node scripts/test-audio-download.js
 |------|------------|
 | `src/main.js` | Electron, IPC, диалог папки |
 | `src/auth.js` | Авторизация, HTTP-клиент, SOCKS |
-| `src/audio.js` | Редиректы, скачивание MP3 |
+| `src/audio.js` | Редиректы, скачивание и превью MP3 |
 | `src/lesson.js` | Разбор ID / URL урока |
-| `src/settings.js` | Локальные настройки |
+| `src/settings.js` | Локальные настройки (язык, прокси, учётные данные) |
+| `src/i18n-messages.js` | Строки интерфейса (ru / en) |
+| `src/update-check.js` | Проверка версии на GitHub |
 | `src/renderer/` | Интерфейс и валидация ввода |
+| `assets/icons/` | Иконки приложения и брендинг |
 
 ## Разработка
 
@@ -72,6 +109,6 @@ node scripts/test-audio-download.js
 
 ## Лицензия
 
-Проект распространяется под лицензией **[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)** (общественное достояние). Полный текст — в файле [LICENSE](LICENSE).
+Проект распространяется под лицензией **[CC BY-NC-SA 4.0 International](https://creativecommons.org/licenses/by-nc-sa/4.0/)** (Attribution — NonCommercial — ShareAlike). Полный текст — в файле [LICENSE](LICENSE).
 
-Вы можете свободно использовать, изменять и распространять код без ограничений, насколько это допускает закон.
+Вы можете свободно использовать, изменять и распространять код **с указанием авторства**, **без коммерческого использования** и **на тех же условиях** (ShareAlike) для производных работ, насколько это допускает закон.

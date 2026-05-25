@@ -50,38 +50,36 @@
   function validateLessonInput(value) {
     const trimmed = String(value ?? '').trim();
     if (!trimmed) {
-      return { ok: false, message: 'Укажите ID урока или ссылку.' };
+      return { ok: false, messageKey: 'validation.lessonRequired' };
     }
 
     if (isUrlLikeInput(trimmed)) {
       if (!/^https?:\/\//i.test(trimmed)) {
-        return {
-          ok: false,
-          message: 'Ссылка должна начинаться с http:// или https://',
-        };
+        return { ok: false, messageKey: 'validation.urlProtocol' };
       }
     } else if (!/^\d+$/.test(trimmed)) {
-      return { ok: false, message: 'ID урока — только цифры.' };
+      return { ok: false, messageKey: 'validation.lessonDigitsOnly' };
     }
 
     const lessonId = parseLessonIdOrUrl(trimmed);
     if (!lessonId) {
-      return {
-        ok: false,
-        message: 'Не удалось найти ID в ссылке. Проверьте адрес.',
-      };
+      return { ok: false, messageKey: 'validation.lessonIdNotFound' };
     }
 
     return { ok: true, lessonId };
   }
 
-  function validateDigitsField(value, label) {
+  function validateDigitsField(value, fieldLabelKey) {
     const trimmed = String(value ?? '').trim();
     if (!trimmed) {
-      return { ok: false, message: `Укажите ${label}.` };
+      return { ok: false, messageKey: 'validation.specifyField', messageParams: { field: fieldLabelKey } };
     }
     if (!/^\d+$/.test(trimmed)) {
-      return { ok: false, message: `${label}: только цифры.` };
+      return {
+        ok: false,
+        messageKey: 'validation.digitsOnly',
+        messageParams: { field: fieldLabelKey },
+      };
     }
     return { ok: true, value: trimmed };
   }

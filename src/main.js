@@ -1,4 +1,9 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const fs = require('fs');
+
+const GITHUB_REPO_URL = 'https://github.com/Marfa/blinklearningdownloader';
+const GITHUB_RELEASES_URL = 'https://github.com/Marfa/blinklearningdownloader/releases';
+const ALLOWED_EXTERNAL_URLS = new Set([GITHUB_REPO_URL, GITHUB_RELEASES_URL]);
 const path = require('path');
 const { authenticate } = require('./auth');
 const { readSettings, saveSettings, clearAuthCredentials } = require('./settings');
@@ -8,22 +13,43 @@ const {
   clearSession,
   getHttpClient,
 } = require('./session');
-const { resolveTrackNumbers, downloadTracks } = require('./audio');
+const { resolveTrackNumbers, downloadTracks, prepareTrackPreview } = require('./audio');
+const { t, getLocale } = require('./i18n');
+const { getAppVersion } = require('./version');
+const { checkForUpdate } = require('./update-check');
 
 let mainWindow;
 
+function resolveWindowIcon() {
+  const candidates = [
+    path.join(__dirname, '..', 'assets', 'icons', 'icon.png'),
+    path.join(__dirname, '..', 'assets', 'icons', 'icon.ico'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return undefined;
+}
+
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const windowOptions = {
     width: 440,
     height: 820,
     resizable: false,
     autoHideMenuBar: true,
+    backgroundColor: '#eeeeee',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
-  });
+  };
+
+  const iconPath = resolveWindowIcon();
+  if (iconPath) windowOptions.icon = iconPath;
+
+  mainWindow = new BrowserWindow(windowOptions);
 
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
@@ -73,11 +99,13 @@ ipcMain.handle('audio:download', async (_event, options) => {
   const client = getHttpClient();
   const { lessonId } = getSession();
 
+  const locale = getLocale();
+
   if (!client) {
-    return { ok: false, message: 'Сначала выполните вход.' };
+    return { ok: false, message: t('main.loginRequired', locale) };
   }
   if (!lessonId) {
-    return { ok: false, message: 'Не указан ID урока.' };
+    return { ok: false, message: t('main.lessonRequired', locale) };
   }
 
   const tracksResult = resolveTrackNumbers(options);
@@ -88,13 +116,13 @@ ipcMain.handle('audio:download', async (_event, options) => {
   const defaultPath = getDefaultDownloadDir();
 
   const folderResult = await dialog.showOpenDialog(mainWindow, {
-    title: 'Папка для сохранения аудио',
+    title: t('main.folderDialogTitle', locale),
     defaultPath,
     properties: ['openDirectory', 'createDirectory'],
   });
 
   if (folderResult.canceled || !folderResult.filePaths?.length) {
-    return { ok: false, canceled: true, message: 'Папка не выбрана.' };
+    return { ok: false, canceled: true, message: t('main.folderNotChosen', locale) };
   }
 
   const destDir = folderResult.filePaths[0];
@@ -102,7 +130,7 @@ ipcMain.handle('audio:download', async (_event, options) => {
 
   sendDownloadProgress({
     phase: 'prepare',
-    message: 'Подготовка к скачиванию…',
+    message: t('main.prepareDownload', locale),
     percent: 0,
   });
 
@@ -119,9 +147,43 @@ ipcMain.handle('audio:download', async (_event, options) => {
 
     return { ...result, destDir };
   } catch (err) {
-    const message = err.message || 'Ошибка при скачивании аудио.';
+    const message = err.message || t('main.downloadError', locale);
     sendDownloadProgress({ phase: 'error', message });
     return { ok: false, message, errors: [message] };
+  }
+});
+
+ipcMain.handle('audio:preview', async (_event, { trackNumber }) => {
+  const client = getHttpClient();
+  const { lessonId } = getSession();
+  const locale = getLocale();
+
+  if (!client) {
+    return { ok: false, message: t('main.loginRequired', locale) };
+  }
+  if (!lessonId) {
+    return { ok: false, message: t('main.lessonRequired', locale) };
+  }
+
+  const track = Number(trackNumber);
+  if (!Number.isFinite(track)) {
+    return { ok: false, message: t('audio.numberRequired', locale) };
+  }
+
+  const { settings } = readSettings();
+
+  try {
+    const result = await prepareTrackPreview(
+      client,
+      lessonId,
+      track,
+      (progress) => sendDownloadProgress({ ...progress, preview: true }),
+      settings.proxy
+    );
+    return result;
+  } catch (err) {
+    const message = err.message || t('main.previewError', locale);
+    return { ok: false, message };
   }
 });
 
@@ -131,6 +193,18 @@ ipcMain.handle('app:logout', async () => {
   return { ok: true };
 });
 
+ipcMain.handle('app:getVersion', () => getAppVersion());
+
+ipcMain.handle('app:checkForUpdate', () => checkForUpdate());
+
+ipcMain.handle('app:openExternal', async (_event, url) => {
+  if (ALLOWED_EXTERNAL_URLS.has(url)) {
+    await shell.openExternal(url);
+    return { ok: true };
+  }
+  return { ok: false };
+});
+
 ipcMain.handle('auth:login', async (_event, payload) => {
   try {
     const result = await authenticate(payload);
@@ -138,7 +212,7 @@ ipcMain.handle('auth:login', async (_event, payload) => {
   } catch (err) {
     return {
       success: false,
-      message: err.message || 'Неизвестная ошибка авторизации.',
+      message: err.message || t('auth.unknown', getLocale()),
     };
   }
 });

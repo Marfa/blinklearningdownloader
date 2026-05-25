@@ -1,16 +1,51 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const path = require('path');
+const fs = require('fs');
 
-contextBridge.exposeInMainWorld('blinkAuth', {
-  login: (payload) => ipcRenderer.invoke('auth:login', payload),
-  getSettings: () => ipcRenderer.invoke('settings:get'),
-  saveSettings: (partial) => ipcRenderer.invoke('settings:save', partial),
-  setLesson: (rawInput) => ipcRenderer.invoke('session:setLesson', rawInput),
-  getSession: () => ipcRenderer.invoke('session:get'),
-  logout: () => ipcRenderer.invoke('app:logout'),
-  downloadAudio: (options) => ipcRenderer.invoke('audio:download', options),
-  onDownloadProgress: (callback) => {
-    const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on('audio:progress', listener);
-    return () => ipcRenderer.removeListener('audio:progress', listener);
-  },
-});
+function readAppVersion() {
+  const candidates = [path.join(__dirname, '..', 'package.json')];
+  if (process.resourcesPath) {
+    candidates.push(
+      path.join(process.resourcesPath, 'app', 'package.json'),
+      path.join(process.resourcesPath, 'package.json')
+    );
+  }
+  for (const pkgPath of candidates) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      if (pkg.version) return String(pkg.version);
+    } catch {
+      /* try next */
+    }
+  }
+  return '1.1.0';
+}
+
+function toMediaUrl(filePath) {
+  const { pathToFileURL } = require('url');
+  return pathToFileURL(filePath).href;
+}
+
+try {
+  contextBridge.exposeInMainWorld('blinkAuth', {
+    login: (payload) => ipcRenderer.invoke('auth:login', payload),
+    getSettings: () => ipcRenderer.invoke('settings:get'),
+    saveSettings: (partial) => ipcRenderer.invoke('settings:save', partial),
+    setLesson: (rawInput) => ipcRenderer.invoke('session:setLesson', rawInput),
+    getSession: () => ipcRenderer.invoke('session:get'),
+    logout: () => ipcRenderer.invoke('app:logout'),
+    downloadAudio: (options) => ipcRenderer.invoke('audio:download', options),
+    previewAudio: (trackNumber) => ipcRenderer.invoke('audio:preview', { trackNumber }),
+    toMediaUrl,
+    onDownloadProgress: (callback) => {
+      const listener = (_event, payload) => callback(payload);
+      ipcRenderer.on('audio:progress', listener);
+      return () => ipcRenderer.removeListener('audio:progress', listener);
+    },
+    getVersion: () => readAppVersion(),
+    checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate'),
+    openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+  });
+} catch (err) {
+  console.error('[preload] failed to expose blinkAuth:', err);
+}
