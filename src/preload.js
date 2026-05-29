@@ -18,7 +18,7 @@ function readAppVersion() {
       /* try next */
     }
   }
-  return '1.1.1';
+  return '1.1.2';
 }
 
 function toMediaUrl(filePath) {
@@ -45,6 +45,12 @@ try {
     getVersion: () => readAppVersion(),
     checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate'),
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+    pickProxy: () => ipcRenderer.invoke('proxy:pick'),
+    onProxyPickProgress: (callback) => {
+      const listener = (_event, payload) => callback(payload);
+      ipcRenderer.on('proxy:progress', listener);
+      return () => ipcRenderer.removeListener('proxy:progress', listener);
+    },
   });
 } catch (err) {
   console.error('[preload] failed to expose blinkAuth:', err);

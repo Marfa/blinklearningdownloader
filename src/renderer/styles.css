@@ -301,6 +301,12 @@ input:focus {
   margin-bottom: 14px;
 }
 
+.proxy-pick-btn {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-top: 2px;
+}
+
 .field-range {
   margin-bottom: 14px;
 }

@@ -9,6 +9,7 @@ const rememberLogin = document.getElementById('remember-login');
 const proxyFields = document.getElementById('proxy-fields');
 const proxyHost = document.getElementById('proxy-host');
 const proxyPort = document.getElementById('proxy-port');
+const pickProxyBtn = document.getElementById('pick-proxy-btn');
 const statusEl = document.getElementById('status');
 const submitBtn = document.getElementById('submit-btn');
 const instructionToggle = document.getElementById('instruction-toggle');
@@ -37,6 +38,8 @@ let successHideTimer = null;
 let downloadAllMode = false;
 let removeProgressListener = null;
 let audioBusy = false;
+let proxyPickBusy = false;
+let removeProxyPickListener = null;
 
 const inputValidation = window.BlinkInputValidation;
 
@@ -472,7 +475,7 @@ function closeHelpModal() {
 
 function loadAppVersion() {
   const version = window.blinkAuth?.getVersion?.();
-  helpVersion.textContent = version || '1.1.1';
+  helpVersion.textContent = version || '1.1.2';
 }
 
 function updateNoticeLabel() {
@@ -553,6 +556,81 @@ useProxy.addEventListener('change', () => {
 
 proxyHost.addEventListener('change', saveProxySettings);
 proxyPort.addEventListener('change', saveProxySettings);
+
+function setProxyPickBusy(busy) {
+  proxyPickBusy = busy;
+  if (pickProxyBtn) pickProxyBtn.disabled = busy;
+  if (busy) submitBtn.disabled = true;
+  else submitBtn.disabled = false;
+}
+
+function proxyPickStatusText(progress) {
+  if (!progress?.phase) return '';
+
+  switch (progress.phase) {
+    case 'loadingList':
+      return tt('proxy.pickStage.loadingList');
+    case 'checkingServer':
+      return tt('proxy.pickStage.checkingServer', {
+        host: progress.host ?? '—',
+        current: progress.current ?? 0,
+        total: progress.total ?? 0,
+      });
+    case 'tryingPort':
+      return tt('proxy.pickStage.tryingPort', {
+        host: progress.host ?? '—',
+        port: progress.port ?? '—',
+      });
+    default:
+      return '';
+  }
+}
+
+async function onPickProxyClick() {
+  if (!window.blinkAuth?.pickProxy || proxyPickBusy) return;
+
+  if (!useProxy.checked) {
+    useProxy.checked = true;
+    proxyFields.classList.remove('hidden');
+  }
+
+  setProxyPickBusy(true);
+  showStatus(tt('proxy.pickStage.loadingList'), 'info');
+
+  removeProxyPickListener?.();
+  removeProxyPickListener = window.blinkAuth.onProxyPickProgress?.((progress) => {
+    const text = proxyPickStatusText(progress);
+    if (text) showStatus(text, 'info');
+  });
+
+  try {
+    const result = await window.blinkAuth.pickProxy();
+    if (result?.ok && result.proxy) {
+      proxyHost.value = result.proxy.host;
+      proxyPort.value = String(result.proxy.port);
+      await saveProxySettings();
+      showStatus(
+        tt('proxy.pickStage.success', {
+          host: result.proxy.host,
+          port: result.proxy.port,
+        }),
+        'success'
+      );
+    } else {
+      showStatus(result?.message || tt('proxy.pickFailed'), 'error');
+    }
+  } catch (err) {
+    showStatus(err?.message || tt('proxy.pickFailed'), 'error');
+  } finally {
+    removeProxyPickListener?.();
+    removeProxyPickListener = null;
+    setProxyPickBusy(false);
+  }
+}
+
+if (pickProxyBtn) {
+  pickProxyBtn.addEventListener('click', onPickProxyClick);
+}
 
 instructionToggle.addEventListener('click', () => {
   const hidden = instructionPanel.classList.toggle('hidden');

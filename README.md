@@ -10,10 +10,10 @@
 
 | Платформа | Файл | Описание |
 |-----------|------|----------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.1.exe` | Установщик (NSIS) |
-| Windows | `BlinkLearning-Downloader-1.1.1-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
-| Windows | `BlinkLearning-Downloader-1.1.1-win-x64.zip` | Архив распакованной папки (portable) |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.1-mac-arm64.zip` | Приложение `.app` в архиве |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.2.exe` | Установщик (NSIS) |
+| Windows | `BlinkLearning-Downloader-1.1.2-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
+| Windows | `BlinkLearning-Downloader-1.1.2-win-x64.zip` | Архив распакованной папки (portable) |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.2-mac-arm64.zip` | Приложение `.app` в архиве |
 
 > **Android:** мобильной сборки нет — проект основан на Electron для настольных ОС.
 
@@ -24,7 +24,7 @@
 ![Интерфейс приложения: вход, выбор урока, скачивание аудио](docs/app-screenshot.png)
 
 1. **Вход** — логин и пароль BlinkLearning, опционально «Запомнить логин-пароль».
-2. **Прокси** — опциональный SOCKS5 (IP и порт задаёт пользователь).
+2. **Прокси** — опциональный SOCKS5 (IP и порт вручную или **«Подобрать прокси»** — список с proxy-tools.com, проверка через x.com).
 3. **Урок** — ID урока (только цифры) или полная ссылка из браузера; ID извлекается из цифр после последнего `/` в URL.
 4. **Аудио** — один номер или диапазон «С»–«По»; в полях допускаются только цифры.
 5. **Прослушивание** — воспроизведение одного трека в приложении (если указан номер аудио).
@@ -35,6 +35,10 @@
 10. **О программе** — версия и ссылка на репозиторий.
 
 Формат файлов на CDN: `PISTA06.mp3`, `PISTA24.mp3` и т.д. в каталоге урока на `blinklearning.com`.
+
+### Что нового в 1.1.2
+
+- Автоподбор SOCKS5-прокси с понятными этапами в интерфейсе.
 
 ### Что нового в 1.1.0
 
@@ -102,6 +106,7 @@ node scripts/test-audio-download.js
 | `src/settings.js` | Локальные настройки (язык, прокси, учётные данные) |
 | `src/i18n-messages.js` | Строки интерфейса (ru / en) |
 | `src/update-check.js` | Проверка версии на GitHub |
+| `src/proxy-picker.js` | Подбор SOCKS5 с proxy-tools.com |
 | `src/renderer/` | Интерфейс и валидация ввода |
 | `assets/icons/` | Иконки приложения и брендинг |
 
