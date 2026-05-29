@@ -4,7 +4,7 @@
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="1.1.1"
+VERSION="1.1.2"
 TAG="v${VERSION}"
 RELEASE_DIR="${ROOT}/release-build"
 

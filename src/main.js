@@ -17,6 +17,7 @@ const { resolveTrackNumbers, downloadTracks, prepareTrackPreview } = require('./
 const { t, getLocale } = require('./i18n');
 const { getAppVersion } = require('./version');
 const { checkForUpdate } = require('./update-check');
+const { pickWorkingSocks5Proxy } = require('./proxy-picker');
 
 let mainWindow;
 
@@ -57,6 +58,12 @@ function createWindow() {
 function sendDownloadProgress(payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('audio:progress', payload);
+  }
+}
+
+function sendProxyPickProgress(payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('proxy:progress', payload);
   }
 }
 
@@ -203,6 +210,31 @@ ipcMain.handle('app:openExternal', async (_event, url) => {
     return { ok: true };
   }
   return { ok: false };
+});
+
+ipcMain.handle('proxy:pick', async () => {
+  const locale = getLocale();
+
+  try {
+    const proxy = await pickWorkingSocks5Proxy({
+      onProgress: (progress) => sendProxyPickProgress(progress),
+    });
+
+    if (!proxy) {
+      return { ok: false, message: t('proxy.pickFailed', locale) };
+    }
+
+    return { ok: true, proxy };
+  } catch (err) {
+    const code = err.message;
+    if (code === 'PROXY_LIST_FETCH_FAILED' || code === 'PROXY_LIST_EMPTY') {
+      return { ok: false, message: t('proxy.pickListFailed', locale) };
+    }
+    return {
+      ok: false,
+      message: err.message || t('proxy.pickFailed', locale),
+    };
+  }
 });
 
 ipcMain.handle('auth:login', async (_event, payload) => {

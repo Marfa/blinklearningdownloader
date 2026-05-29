@@ -10,10 +10,10 @@ Latest builds are on [GitHub Releases](https://github.com/Marfa/blinklearningdow
 
 | Platform | File | Description |
 |----------|------|-------------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.1.exe` | NSIS installer |
-| Windows | `BlinkLearning-Downloader-1.1.1-win-x64-portable.exe` | Portable single `.exe` (no install) |
-| Windows | `BlinkLearning-Downloader-1.1.1-win-x64.zip` | Zipped unpacked folder |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.1-mac-arm64.zip` | `.app` bundle in a zip |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.2.exe` | NSIS installer |
+| Windows | `BlinkLearning-Downloader-1.1.2-win-x64-portable.exe` | Portable single `.exe` (no install) |
+| Windows | `BlinkLearning-Downloader-1.1.2-win-x64.zip` | Zipped unpacked folder |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.2-mac-arm64.zip` | `.app` bundle in a zip |
 
 > **Android:** there is no mobile build — this project uses Electron for desktop OS only.
 
@@ -24,7 +24,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 ![App UI: sign-in, lesson selection, audio download](docs/app-screenshot.png)
 
 1. **Sign in** — BlinkLearning username and password; optional “Remember username and password”.
-2. **Proxy** — optional SOCKS5 (IP and port set by the user).
+2. **Proxy** — optional SOCKS5 (manual IP/port or **Find proxy** — list from proxy-tools.com, verified via x.com).
 3. **Lesson** — lesson ID (digits only) or full URL from the browser; the ID is taken from the digits after the last `/` in the URL.
 4. **Audio** — one track number or a “From”–“To” range; only digits are allowed in the fields.
 5. **Listen** — play a single track in the app (when one track number is entered).
@@ -35,6 +35,10 @@ See [CHANGELOG.md](CHANGELOG.md).
 10. **About** — version and link to the repository.
 
 Audio files on the CDN look like `PISTA06.mp3`, `PISTA24.mp3`, etc., under the lesson path on `blinklearning.com`.
+
+### What’s new in 1.1.2
+
+- Automatic SOCKS5 proxy pick with clear progress steps in the UI.
 
 ### What’s new in 1.1.0
 
@@ -102,6 +106,7 @@ node scripts/test-audio-download.js
 | `src/settings.js` | Local settings (locale, proxy, credentials) |
 | `src/i18n-messages.js` | UI strings (ru / en) |
 | `src/update-check.js` | GitHub release version check |
+| `src/proxy-picker.js` | SOCKS5 pick from proxy-tools.com |
 | `src/renderer/` | UI and input validation |
 | `assets/icons/` | App icons and branding |
 

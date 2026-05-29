@@ -11,6 +11,7 @@ const messages = {
     'ui.login.proxyPort': 'Порт',
     'ui.login.proxyIpPlaceholder': 'IP прокси',
     'ui.login.proxyPortPlaceholder': 'Порт',
+    'ui.login.pickProxy': 'Подобрать прокси',
     'ui.login.submit': 'Войти',
     'ui.lesson.authSuccess': 'Авторизация прошла успешно.',
     'ui.lesson.idLabel': 'Укажите ID урока или ссылку',
@@ -59,6 +60,13 @@ const messages = {
     'validation.rangeFromGtTo': 'Номер «С» не может быть больше номера «По».',
     'validation.audioOrRange': 'Укажите номер аудио или диапазон.',
     'renderer.proxyRequired': 'Укажите IP и порт SOCKS5 прокси.',
+    'proxy.pickStage.loadingList': 'Загружаем список SOCKS5-прокси…',
+    'proxy.pickStage.checkingServer': 'Сервер {current} из {total}: {host}',
+    'proxy.pickStage.tryingPort': 'Проверяем {host}:{port} (доступ к x.com)…',
+    'proxy.pickStage.success': 'Найден рабочий прокси: {host}:{port}',
+    'proxy.pickFailed':
+      'Не удалось подобрать рабочий SOCKS5 прокси. Укажите IP и порт вручную.',
+    'proxy.pickListFailed': 'Не удалось загрузить список прокси с proxy-tools.com.',
     'renderer.initError':
       'Не удалось подключить интерфейс к приложению. Полностью закройте программу и откройте снова.',
     'renderer.authFailed': 'Ошибка авторизации.',
@@ -142,6 +150,7 @@ const messages = {
     'ui.login.proxyPort': 'Port',
     'ui.login.proxyIpPlaceholder': 'Proxy IP',
     'ui.login.proxyPortPlaceholder': 'Port',
+    'ui.login.pickProxy': 'Find proxy',
     'ui.login.submit': 'Sign in',
     'ui.lesson.authSuccess': 'Signed in successfully.',
     'ui.lesson.idLabel': 'Enter lesson ID or URL',
@@ -190,6 +199,13 @@ const messages = {
     'validation.rangeFromGtTo': '“From” cannot be greater than “To”.',
     'validation.audioOrRange': 'Enter an audio track number or a range.',
     'renderer.proxyRequired': 'Enter SOCKS5 proxy IP and port.',
+    'proxy.pickStage.loadingList': 'Loading SOCKS5 proxy list…',
+    'proxy.pickStage.checkingServer': 'Server {current} of {total}: {host}',
+    'proxy.pickStage.tryingPort': 'Testing {host}:{port} (x.com access)…',
+    'proxy.pickStage.success': 'Working proxy found: {host}:{port}',
+    'proxy.pickFailed':
+      'Could not find a working SOCKS5 proxy. Enter IP and port manually.',
+    'proxy.pickListFailed': 'Could not load the proxy list from proxy-tools.com.',
     'renderer.initError':
       'Could not connect the UI to the app. Quit completely and open the app again.',
     'renderer.authFailed': 'Authentication failed.',
