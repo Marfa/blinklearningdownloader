@@ -138,6 +138,30 @@ function sortByTitle(items) {
   );
 }
 
+function sortBooks(items) {
+  return [...items].sort((a, b) => {
+    if (Boolean(a.locked) !== Boolean(b.locked)) {
+      return a.locked ? 1 : -1;
+    }
+    return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+  });
+}
+
+function exerciseSortRank(title) {
+  const lower = String(title || '').trim().toLowerCase();
+  if (/libro\s*digital/.test(lower)) return 0;
+  if (/html\s+con\s+actividad/.test(lower)) return 1;
+  return 2;
+}
+
+function sortExercises(items) {
+  return [...items].sort((a, b) => {
+    const rankDiff = exerciseSortRank(a.title) - exerciseSortRank(b.title);
+    if (rankDiff !== 0) return rankDiff;
+    return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+  });
+}
+
 function isNavigationCatalogTitle(title) {
   const text = String(title || '').trim();
   if (!text) return true;
@@ -168,7 +192,7 @@ async function listBooks() {
     return data;
   })()`);
 
-  return sortByTitle(
+  return sortBooks(
     Object.values(raw || {})
       .filter((b) => b && typeof b === 'object' && b.id != null)
       .map((b) => ({
@@ -300,7 +324,7 @@ async function listExercises(bookId, chapterId) {
     }
   }
 
-  return sortByTitle(
+  return sortExercises(
     filterCatalogEntries(
       bucket.map((item) => ({
         ...item,

@@ -10,10 +10,10 @@
 
 | Платформа | Файл | Описание |
 |-----------|------|----------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.3.exe` | Установщик (NSIS) |
-| Windows | `BlinkLearning-Downloader-1.1.3-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
-| Windows | `BlinkLearning-Downloader-1.1.3-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.3-mac-arm64.zip` | Приложение `.app` в архиве |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.4.exe` | Установщик (NSIS) |
+| Windows | `BlinkLearning-Downloader-1.1.4-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
+| Windows | `BlinkLearning-Downloader-1.1.4-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.4-mac-arm64.zip` | Приложение `.app` в архиве |
 
 > **Android:** мобильной сборки нет — проект основан на Electron для настольных ОС.
 
@@ -34,6 +34,10 @@
 9. **О программе** — версия и ссылка на репозиторий.
 
 Формат файлов на CDN: `PISTA06.mp3`, `PISTA24.mp3` и т.д. в каталоге урока.
+
+### Что нового в 1.1.4
+
+- Доступные учебники в начале списка; **Libro Digital** выше **HTML con actividades** в упражнениях.
 
 ### Что нового в 1.1.3
 

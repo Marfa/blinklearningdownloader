@@ -2,6 +2,13 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
 
+## [1.1.4] — 2026-06-04
+
+### Изменено
+
+- В списке учебников сначала показываются доступные (без Faltan Licencias), затем заблокированные; внутри группы — по алфавиту.
+- В списке упражнений **Libro Digital** выше **HTML con actividades** (и аналогичных названий), остальные — по алфавиту.
+
 ## [1.1.3] — 2026-05-22
 
 ### Добавлено
@@ -64,6 +71,7 @@
 
 - Первая версия для Windows: вход, SOCKS5, скачивание MP3 по ID урока или ссылке, один трек или диапазон.
 
+[1.1.4]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.0...v1.1.1
