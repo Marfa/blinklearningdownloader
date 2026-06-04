@@ -134,22 +134,45 @@ ipcMain.handle('catalog:listBooks', async () => {
   if (!getHttpClient()) {
     return { ok: false, message: t('main.loginRequired', locale) };
   }
+  const { settings } = readSettings();
+  if (settings.proxy?.enabled && (!settings.proxy.host || !settings.proxy.port)) {
+    return { ok: false, message: t('renderer.proxyRequired', locale) };
+  }
   try {
     const books = await listBooks();
     return { ok: true, books };
   } catch (err) {
-    return {
-      ok: false,
-      message: mapCatalogError(err, locale),
-    };
+    const message = mapCatalogError(err, locale);
+    if (String(err?.message || '').includes('Failed to fetch')) {
+      return {
+        ok: false,
+        message: t('auth.networkError', locale, {
+          detail: err.message,
+          proxyHint: settings.proxy?.enabled ? '' : t('auth.networkErrorProxyHint', locale),
+        }),
+      };
+    }
+    return { ok: false, message };
   }
 });
 
 function mapCatalogError(err, locale) {
   const code = err?.message || '';
-  if (code === 'CATALOG_BLINK_TIMEOUT') return t('catalog.timeout', locale);
+  if (
+    code === 'CATALOG_BLINK_TIMEOUT' ||
+    code === 'CATALOG_BLINK_LOAD_FAILED' ||
+    code === 'CATALOG_SCRIPT_TIMEOUT'
+  ) {
+    return t('catalog.timeout', locale);
+  }
+  if (code === 'CATALOG_SESSION_EXPIRED') return t('catalog.sessionExpired', locale);
   if (code === 'CATALOG_NOT_AUTHENTICATED') return t('main.loginRequired', locale);
   if (code === 'CATALOG_USER_ID') return t('catalog.userIdFailed', locale);
+  if (code === 'CATALOG_CHAPTERS_EMPTY') return t('catalog.loadChaptersFailed', locale);
+  if (code === 'CATALOG_EXERCISES_EMPTY') return t('catalog.loadExercisesFailed', locale);
+  if (code === 'CATALOG_GETBOOK_FAILED' || code === 'CATALOG_MYBOOKS_FAILED') {
+    return t('catalog.loadBooksFailed', locale);
+  }
   return err?.message || t('catalog.loadBooksFailed', locale);
 }
 
@@ -361,7 +384,13 @@ ipcMain.handle('proxy:pick', async () => {
     return { ok: true, proxy };
   } catch (err) {
     const code = err.message;
-    if (code === 'PROXY_LIST_FETCH_FAILED' || code === 'PROXY_LIST_EMPTY') {
+    if (code === 'PROXY_LIST_BLOCKED') {
+      return { ok: false, message: t('proxy.pickListBlocked', locale) };
+    }
+    if (code === 'PROXY_LIST_EMPTY') {
+      return { ok: false, message: t('proxy.pickListEmpty', locale) };
+    }
+    if (code === 'PROXY_LIST_FETCH_FAILED') {
       return { ok: false, message: t('proxy.pickListFailed', locale) };
     }
     return {
@@ -372,8 +401,12 @@ ipcMain.handle('proxy:pick', async () => {
 });
 
 ipcMain.handle('auth:login', async (_event, payload) => {
+  destroyCatalogWindow();
   try {
     const result = await authenticate(payload);
+    if (result?.success) {
+      destroyCatalogWindow();
+    }
     return result;
   } catch (err) {
     return {

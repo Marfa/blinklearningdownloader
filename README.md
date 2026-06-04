@@ -10,10 +10,10 @@
 
 | Платформа | Файл | Описание |
 |-----------|------|----------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.4.exe` | Установщик (NSIS) |
-| Windows | `BlinkLearning-Downloader-1.1.4-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
-| Windows | `BlinkLearning-Downloader-1.1.4-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.4-mac-arm64.zip` | Приложение `.app` в архиве |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.5.exe` | Установщик (NSIS) |
+| Windows | `BlinkLearning-Downloader-1.1.5-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
+| Windows | `BlinkLearning-Downloader-1.1.5-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.5-mac-arm64.zip` | Приложение `.app` в архиве |
 
 > **Android:** мобильной сборки нет — проект основан на Electron для настольных ОС.
 
@@ -24,7 +24,7 @@
 ![Интерфейс приложения: вход, выбор урока, скачивание аудио](docs/app-screenshot.png)
 
 1. **Вход** — логин и пароль BlinkLearning, опционально «Запомнить логин-пароль».
-2. **Прокси** — опциональный SOCKS5 (IP и порт вручную или **«Подобрать прокси»** — список с proxy-tools.com, проверка через x.com).
+2. **Прокси** — опциональный SOCKS5 (IP и порт вручную или **«Подобрать прокси»** — список SOCKS5 с [proxyscrape.com](https://proxyscrape.com/free-proxy-list), проверка доступа к blinklearning.com).
 3. **Каталог** — после входа список учебников (алфавит, поиск по названию); у учебников без лицензии — **Faltan Licencias** и замок. Далее главы → упражнения; выбор упражнения сразу открывает шаг скачивания аудио.
 4. **Аудио** — один номер, диапазон «С»–«По» (**Скачать диапазон аудио**) или **Скачать все аудио** (перебор треков 01–100 до первого пропуска после найденных).
 5. **Прослушивание** — воспроизведение одного трека в приложении.
@@ -33,7 +33,10 @@
 8. **Обновления** — уведомление о новой версии на [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases).
 9. **О программе** — версия и ссылка на репозиторий.
 
-Формат файлов на CDN: `PISTA06.mp3`, `PISTA24.mp3` и т.д. в каталоге урока.
+### Что нового в 1.1.5
+
+- Подбор SOCKS5 с proxyscrape.com; проверка прокси по доступу к BlinkLearning.
+- Стабильнее загрузка каталога учебников (таймауты, сессия с прокси).
 
 ### Что нового в 1.1.4
 
@@ -68,13 +71,19 @@ npm install
 npm run dist:win
 ```
 
+Артефакты для GitHub-релиза (в каталог `release-build/`):
+
+```bash
+npm run dist:release
+```
+
 **macOS** (Apple Silicon):
 
 ```bash
 npm run dist:mac
 ```
 
-Артефакты по умолчанию: `C:\Temp\blinklearningdownloader-build\` (Windows).
+По умолчанию `dist:win` пишет в `C:\Temp\blinklearningdownloader-build\`; `dist:release` — в `release-build\`.
 
 Пользователю достаточно скачать файл из [релиза](https://github.com/Marfa/blinklearningdownloader/releases) — Node.js отдельно не нужен.
 
@@ -115,7 +124,7 @@ node scripts/test-audio-download.js
 
 Исходный код подготовлен с помощью [Cursor](https://cursor.com).
 
-Скрипты в `scripts/` для отладки каталога и авторизации требуют `BLINK_EMAIL` и `BLINK_PASSWORD` в окружении — не коммитьте реальные пароли.
+Скрипты в `scripts/` для отладки каталога и авторизации требуют `BLINK_EMAIL` и `BLINK_PASSWORD` в окружении — **не коммитьте** реальные логины и пароли. Локальные дампы и пробы — в `scripts/probe-out/` (игнорируются Git).
 
 ## Лицензия
 

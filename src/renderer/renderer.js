@@ -838,7 +838,7 @@ function closeHelpModal() {
 
 function loadAppVersion() {
   const version = window.blinkAuth?.getVersion?.();
-  helpVersion.textContent = version || '1.1.2';
+  helpVersion.textContent = version || '1.1.5';
 }
 
 function updateNoticeLabel() {
@@ -933,6 +933,8 @@ function proxyPickStatusText(progress) {
   switch (progress.phase) {
     case 'loadingList':
       return tt('proxy.pickStage.loadingList');
+    case 'loadingFallback':
+      return tt('proxy.pickStage.loadingFallback');
     case 'checkingServer':
       return tt('proxy.pickStage.checkingServer', {
         host: progress.host ?? '—',

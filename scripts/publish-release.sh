@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Publish v1.1.0 to GitHub (push + release assets).
+# Publish release to GitHub (push + tag + upload Windows assets).
 # Requires: git push access, GitHub CLI (`gh auth login`).
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="1.1.2"
+VERSION="1.1.5"
 TAG="v${VERSION}"
 RELEASE_DIR="${ROOT}/release-build"
 
@@ -15,16 +15,14 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
-WIN_DIR="${RELEASE_DIR}/win"
-MAC_ZIP="${RELEASE_DIR}/mac/BlinkLearning-Downloader-${VERSION}-mac-arm64.zip"
-WIN_SETUP="${WIN_DIR}/BlinkLearning-Downloader-Setup-${VERSION}.exe"
-WIN_PORTABLE="${WIN_DIR}/BlinkLearning-Downloader-${VERSION}-win-x64-portable.exe"
-WIN_ZIP="${WIN_DIR}/BlinkLearning-Downloader-${VERSION}-win-x64.zip"
+WIN_SETUP="${RELEASE_DIR}/BlinkLearning-Downloader-Setup-${VERSION}.exe"
+WIN_PORTABLE="${RELEASE_DIR}/BlinkLearning-Downloader-${VERSION}-win-x64-portable.exe"
+WIN_ZIP="${RELEASE_DIR}/BlinkLearning-Downloader-${VERSION}-win-x64.zip"
 
-for f in "$WIN_SETUP" "$WIN_PORTABLE" "$WIN_ZIP" "$MAC_ZIP"; do
+for f in "$WIN_SETUP" "$WIN_PORTABLE" "$WIN_ZIP"; do
   if [[ ! -f "$f" ]]; then
     echo "Missing build artifact: $f"
-    echo "Run: npm run dist:win && npm run dist:mac (with -c.directories.output=release-build/...)"
+    echo "Run: npm run dist:release"
     exit 1
   fi
 done
@@ -34,6 +32,9 @@ git push origin main
 git tag -f "${TAG}" 2>/dev/null || git tag "${TAG}"
 git push origin "${TAG}" --force-with-lease 2>/dev/null || git push origin "${TAG}"
 
+NOTES_FILE="${ROOT}/CHANGELOG.md"
+BODY="$(awk '/^## \[1.1.5\]/,/^## \[1.1.4\]/' "$NOTES_FILE" | sed '1d;$d')"
+
 echo "Creating GitHub release ${TAG}..."
 gh release delete "${TAG}" -y 2>/dev/null || true
 gh release create "${TAG}" \
@@ -41,29 +42,19 @@ gh release create "${TAG}" \
   --notes "$(cat <<EOF
 ## BlinkLearning Downloader ${VERSION}
 
-### Скачать / Download
+### Скачать / Download (Windows)
 
-| Платформа | Файл |
-|-----------|------|
-| Windows (установщик) | \`BlinkLearning-Downloader-Setup-${VERSION}.exe\` |
-| Windows (без установки) | \`BlinkLearning-Downloader-${VERSION}-win-x64-portable.exe\` |
-| Windows (архив) | \`BlinkLearning-Downloader-${VERSION}-win-x64.zip\` |
-| macOS Apple Silicon | \`BlinkLearning-Downloader-${VERSION}-mac-arm64.zip\` |
+| Вариант | Файл |
+|---------|------|
+| Установщик | \`BlinkLearning-Downloader-Setup-${VERSION}.exe\` |
+| Без установки (portable .exe) | \`BlinkLearning-Downloader-${VERSION}-win-x64-portable.exe\` |
+| Архив распакованного приложения | \`BlinkLearning-Downloader-${VERSION}-win-x64.zip\` |
 
-**Android:** мобильной сборки нет — приложение на Electron для Windows и macOS.
-
-### Изменения / Changes
-
-- Поддержка macOS (arm64), исправлен вход на macOS
-- Оформление в стиле [BlinkLearning](https://www.blinklearning.com/)
-- Языки RU / EN, прослушивание аудио в приложении
-- Уведомление о новой версии на GitHub Releases
-- Лицензия CC BY-NC-SA 4.0
+${BODY}
 EOF
 )" \
   "$WIN_SETUP" \
   "$WIN_PORTABLE" \
-  "$WIN_ZIP" \
-  "$MAC_ZIP"
+  "$WIN_ZIP"
 
 echo "Done: https://github.com/Marfa/blinklearningdownloader/releases/tag/${TAG}"

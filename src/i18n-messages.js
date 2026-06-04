@@ -75,13 +75,19 @@ const messages = {
     'validation.rangeFromGtTo': 'Номер «С» не может быть больше номера «По».',
     'validation.audioOrRange': 'Укажите номер аудио или диапазон.',
     'renderer.proxyRequired': 'Укажите IP и порт SOCKS5 прокси.',
-    'proxy.pickStage.loadingList': 'Загружаем список SOCKS5-прокси…',
+    'proxy.pickStage.loadingList': 'Загружаем список SOCKS5 с proxyscrape.com…',
+    'proxy.pickStage.loadingFallback': 'Запасной список SOCKS5, проверяем прокси…',
     'proxy.pickStage.checkingServer': 'Сервер {current} из {total}: {host}',
-    'proxy.pickStage.tryingPort': 'Проверяем {host}:{port} (доступ к x.com)…',
+    'proxy.pickStage.tryingPort': 'Проверяем {host}:{port} (доступ к blinklearning.com)…',
     'proxy.pickStage.success': 'Найден рабочий прокси: {host}:{port}',
     'proxy.pickFailed':
       'Не удалось подобрать рабочий SOCKS5 прокси. Укажите IP и порт вручную.',
-    'proxy.pickListFailed': 'Не удалось загрузить список прокси с proxy-tools.com.',
+    'proxy.pickListFailed':
+      'Не удалось загрузить список proxyscrape.com. Введите прокси вручную.',
+    'proxy.pickListBlocked':
+      'Сайт proxyscrape.com недоступен. Подбор попробует запасной список; если ошибка повторяется — введите прокси вручную.',
+    'proxy.pickListEmpty':
+      'Список SOCKS5 пуст или изменился формат сайта. Попробуйте позже или введите прокси вручную.',
     'renderer.initError':
       'Не удалось подключить интерфейс к приложению. Полностью закройте программу и откройте снова.',
     'renderer.authFailed': 'Ошибка авторизации.',
@@ -104,6 +110,8 @@ const messages = {
     'catalog.loadChaptersFailed': 'Не удалось загрузить список глав.',
     'catalog.loadExercisesFailed': 'Не удалось загрузить список упражнений.',
     'catalog.timeout': 'Не удалось загрузить каталог BlinkLearning (таймаут).',
+    'catalog.sessionExpired':
+      'Сессия BlinkLearning не подошла к каталогу. Выйдите и войдите снова (при прокси проверьте 127.0.0.1:1080).',
     'catalog.userIdFailed': 'Не удалось определить ID пользователя.',
     'auth.proxyInvalid': 'Укажите IP и порт SOCKS5 прокси (1–65535).',
     'auth.credentialsRequired': 'Укажите логин и пароль.',
@@ -239,13 +247,19 @@ const messages = {
     'validation.rangeFromGtTo': '“From” cannot be greater than “To”.',
     'validation.audioOrRange': 'Enter an audio track number or a range.',
     'renderer.proxyRequired': 'Enter SOCKS5 proxy IP and port.',
-    'proxy.pickStage.loadingList': 'Loading SOCKS5 proxy list…',
+    'proxy.pickStage.loadingList': 'Loading SOCKS5 list from proxyscrape.com…',
+    'proxy.pickStage.loadingFallback': 'Using fallback SOCKS5 list, testing proxies…',
     'proxy.pickStage.checkingServer': 'Server {current} of {total}: {host}',
-    'proxy.pickStage.tryingPort': 'Testing {host}:{port} (x.com access)…',
+    'proxy.pickStage.tryingPort': 'Testing {host}:{port} (blinklearning.com access)…',
     'proxy.pickStage.success': 'Working proxy found: {host}:{port}',
     'proxy.pickFailed':
       'Could not find a working SOCKS5 proxy. Enter IP and port manually.',
-    'proxy.pickListFailed': 'Could not load the proxy list from proxy-tools.com.',
+    'proxy.pickListFailed':
+      'Could not load the list from proxyscrape.com. Enter the proxy manually.',
+    'proxy.pickListBlocked':
+      'The proxyscrape.com list is unavailable. A fallback list will be tried; if this persists, enter the proxy manually.',
+    'proxy.pickListEmpty':
+      'The SOCKS5 list is empty or the site layout changed. Try again later or enter the proxy manually.',
     'renderer.initError':
       'Could not connect the UI to the app. Quit completely and open the app again.',
     'renderer.authFailed': 'Authentication failed.',
@@ -268,6 +282,8 @@ const messages = {
     'catalog.loadChaptersFailed': 'Could not load the chapter list.',
     'catalog.loadExercisesFailed': 'Could not load the exercise list.',
     'catalog.timeout': 'Could not load the BlinkLearning catalog (timeout).',
+    'catalog.sessionExpired':
+      'BlinkLearning session did not apply to the catalog. Sign out and sign in again (if using a proxy, check 127.0.0.1:1080).',
     'catalog.userIdFailed': 'Could not determine user ID.',
     'auth.proxyInvalid': 'Enter SOCKS5 proxy IP and port (1–65535).',
     'auth.credentialsRequired': 'Enter username and password.',
