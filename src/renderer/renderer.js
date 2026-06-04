@@ -12,14 +12,16 @@ const proxyPort = document.getElementById('proxy-port');
 const pickProxyBtn = document.getElementById('pick-proxy-btn');
 const statusEl = document.getElementById('status');
 const submitBtn = document.getElementById('submit-btn');
-const instructionToggle = document.getElementById('instruction-toggle');
-const instructionPanel = document.getElementById('instruction-panel');
-const lessonInput = document.getElementById('lesson-id');
-const lessonNextBtn = document.getElementById('lesson-next-btn');
+const catalogHeading = document.getElementById('catalog-heading');
+const catalogStatus = document.getElementById('catalog-status');
+const catalogList = document.getElementById('catalog-list');
+const catalogSearchWrap = document.getElementById('catalog-search-wrap');
+const catalogSearch = document.getElementById('catalog-search');
 const lessonBackBtn = document.getElementById('lesson-back-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const audioSingle = document.getElementById('audio-single');
-const downloadAllBtn = document.getElementById('download-all-btn');
+const downloadRangeBtn = document.getElementById('download-range-btn');
+const downloadAutoAllBtn = document.getElementById('download-auto-all-btn');
 const audioRangeFields = document.getElementById('audio-range-fields');
 const audioFrom = document.getElementById('audio-from');
 const audioTo = document.getElementById('audio-to');
@@ -40,6 +42,90 @@ let removeProgressListener = null;
 let audioBusy = false;
 let proxyPickBusy = false;
 let removeProxyPickListener = null;
+
+const catalogState = {
+  view: 'books',
+  bookId: null,
+  bookTitle: '',
+  chapterId: null,
+  chapterTitle: '',
+  selectedExercise: null,
+  allBooks: [],
+};
+
+let catalogLoadGeneration = 0;
+let lessonAdvanceBusy = false;
+/** @type {'login' | 'catalog' | 'audio'} */
+let appStep = 'login';
+
+function isCatalogStepActive() {
+  return appStep === 'catalog';
+}
+
+function beginCatalogLoad() {
+  catalogLoadGeneration += 1;
+  return catalogLoadGeneration;
+}
+
+function isCatalogLoadCurrent(generation) {
+  return generation === catalogLoadGeneration;
+}
+
+function cancelCatalogLoads() {
+  catalogLoadGeneration += 1;
+}
+
+async function persistExerciseSelection(exercise) {
+  if (!window.blinkAuth?.setExercise || !exercise) return null;
+  return window.blinkAuth.setExercise({
+    lessonId: exercise.lessonId || exercise.id,
+    exerciseUrl: exercise.url,
+    exerciseTitle: exercise.title,
+    bookTitle: catalogState.bookTitle,
+    chapterTitle: catalogState.chapterTitle,
+  });
+}
+
+function applyExerciseSelection(exercise) {
+  catalogState.selectedExercise = exercise;
+  persistExerciseSelection(exercise).catch(() => {});
+}
+
+async function onExercisePicked(exercise) {
+  if (!exercise || !isCatalogStepActive() || lessonAdvanceBusy) return;
+
+  applyExerciseSelection(exercise);
+  lessonAdvanceBusy = true;
+  setCatalogStatus('');
+
+  try {
+    await goToAudioStep(exercise);
+  } finally {
+    lessonAdvanceBusy = false;
+  }
+}
+
+function isSameCatalogItem(a, b) {
+  if (!a || !b) return false;
+  return (
+    String(a.id) === String(b.id) ||
+    String(a.lessonId || a.id) === String(b.lessonId || b.id)
+  );
+}
+
+function findExerciseInList(exercises, selection) {
+  if (!selection || !Array.isArray(exercises)) return null;
+  const targetId = String(selection.id ?? selection.lessonId ?? '');
+  const targetLesson = String(selection.lessonId ?? selection.id ?? '');
+  return (
+    exercises.find(
+      (item) =>
+        String(item.id) === targetId ||
+        String(item.lessonId) === targetLesson ||
+        (selection.url && item.url === selection.url)
+    ) || null
+  );
+}
 
 const inputValidation = window.BlinkInputValidation;
 
@@ -142,7 +228,7 @@ function applyLocale() {
     if (
       !stepLesson.classList.contains('hidden') &&
       !stepSuccess.classList.contains('step-success--error') &&
-      !stepSuccess.classList.contains('hidden')
+      !stepSuccess.classList.contains('is-collapsed')
     ) {
       stepSuccess.textContent = tt('ui.lesson.authSuccess');
     }
@@ -188,19 +274,227 @@ function applyProxyToForm(proxy) {
   proxyFields.classList.toggle('hidden', !useProxy.checked);
 }
 
-function hasLessonInputValue() {
-  return lessonInput.value.trim().length > 0;
+function setCatalogStatus(message, isError = false) {
+  if (!message) {
+    catalogStatus.classList.add('hidden');
+    catalogStatus.textContent = '';
+    catalogStatus.classList.remove('error');
+    return;
+  }
+  catalogStatus.textContent = message;
+  catalogStatus.classList.toggle('error', isError);
+  catalogStatus.classList.remove('hidden');
 }
 
-function updateLessonNextVisibility() {
-  lessonNextBtn.classList.toggle('hidden', !hasLessonInputValue());
+function setCatalogSearchVisible(visible) {
+  catalogSearchWrap.classList.toggle('hidden', !visible);
+  if (!visible) {
+    catalogSearch.value = '';
+  }
+}
+
+function filterBooksByQuery(books, query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return books;
+  return books.filter((b) => String(b.title || '').toLowerCase().includes(q));
+}
+
+function renderCatalogList(items, onSelect) {
+  catalogList.innerHTML = '';
+  for (const item of items) {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'catalog-item';
+    if (item.locked) btn.classList.add('catalog-item--locked');
+    btn.disabled = Boolean(item.disabled) || Boolean(item.locked);
+
+    const title = document.createElement('span');
+    title.className = 'catalog-item-title';
+    title.textContent = item.title;
+    btn.appendChild(title);
+
+    if (item.locked) {
+      const meta = document.createElement('span');
+      meta.className = 'catalog-item-meta';
+
+      const badge = document.createElement('span');
+      badge.className = 'catalog-item-badge';
+      badge.textContent = tt('ui.catalog.lockedBadge');
+
+      const lock = document.createElement('span');
+      lock.className = 'catalog-item-lock';
+      lock.setAttribute('aria-label', tt('ui.catalog.lockedBadge'));
+      lock.textContent = '🔒';
+
+      meta.appendChild(badge);
+      meta.appendChild(lock);
+      btn.appendChild(meta);
+    }
+
+    if (
+      catalogState.selectedExercise &&
+      isSameCatalogItem(item, catalogState.selectedExercise)
+    ) {
+      btn.classList.add('catalog-item--selected');
+    }
+
+    if (!btn.disabled && onSelect) {
+      btn.addEventListener('click', () => {
+        if (!isCatalogStepActive()) return;
+        onSelect(item);
+      });
+    }
+
+    li.appendChild(btn);
+    catalogList.appendChild(li);
+  }
+}
+
+function renderCatalogBooks() {
+  if (!isCatalogStepActive()) return;
+  const filtered = filterBooksByQuery(catalogState.allBooks, catalogSearch.value);
+  if (!filtered.length && catalogState.allBooks.length) {
+    setCatalogStatus(tt('ui.catalog.searchEmpty'), true);
+  } else {
+    setCatalogStatus('');
+  }
+  renderCatalogList(filtered, async (book) => {
+    if (book.locked || !isCatalogStepActive()) return;
+    catalogState.bookId = book.id;
+    catalogState.bookTitle = book.title;
+    await loadCatalogChapters();
+  });
+}
+
+async function loadCatalogBooks() {
+  if (!isCatalogStepActive()) return;
+  const loadGen = beginCatalogLoad();
+  catalogState.view = 'books';
+  catalogState.bookId = null;
+  catalogState.chapterId = null;
+  catalogState.selectedExercise = null;
+  setCatalogSearchVisible(true);
+  catalogHeading.textContent = tt('ui.catalog.booksTitle');
+  setCatalogStatus(tt('ui.catalog.loadingBooks'));
+
+  const result = await window.blinkAuth.listBooks();
+  if (!isCatalogLoadCurrent(loadGen) || !isCatalogStepActive()) return;
+
+  if (!result?.ok) {
+    setCatalogSearchVisible(false);
+    setCatalogStatus(result?.message || tt('catalog.loadBooksFailed'), true);
+    renderCatalogList([]);
+    return;
+  }
+
+  catalogState.allBooks = result.books || [];
+  renderCatalogBooks();
+}
+
+async function loadCatalogChapters() {
+  if (!isCatalogStepActive()) return;
+  const loadGen = beginCatalogLoad();
+  catalogState.view = 'chapters';
+  catalogState.chapterId = null;
+  catalogState.selectedExercise = null;
+  setCatalogSearchVisible(false);
+  catalogHeading.textContent = catalogState.bookTitle || tt('ui.catalog.chaptersTitle');
+  setCatalogStatus(tt('ui.catalog.loadingChapters'));
+
+  const result = await window.blinkAuth.listChapters(catalogState.bookId);
+  if (!isCatalogLoadCurrent(loadGen) || !isCatalogStepActive()) return;
+
+  if (!result?.ok) {
+    setCatalogStatus(result?.message || tt('catalog.loadChaptersFailed'), true);
+    renderCatalogList([]);
+    return;
+  }
+
+  setCatalogStatus('');
+  renderCatalogList(result.chapters || [], async (chapter) => {
+    if (!isCatalogStepActive()) return;
+    catalogState.chapterId = chapter.id;
+    catalogState.chapterTitle = chapter.title;
+    await loadCatalogExercises();
+  });
+}
+
+async function loadCatalogExercises() {
+  if (!isCatalogStepActive()) return;
+  const loadGen = beginCatalogLoad();
+  const preserveSelection = catalogState.selectedExercise;
+  catalogState.view = 'exercises';
+  catalogHeading.textContent = catalogState.chapterTitle || tt('ui.catalog.exercisesTitle');
+  setCatalogStatus(tt('ui.catalog.loadingExercises'));
+
+  const result = await window.blinkAuth.listExercises(
+    catalogState.bookId,
+    catalogState.chapterId
+  );
+  if (!isCatalogLoadCurrent(loadGen) || !isCatalogStepActive()) return;
+
+  if (!result?.ok) {
+    setCatalogStatus(result?.message || tt('catalog.loadExercisesFailed'), true);
+    renderCatalogList([]);
+    return;
+  }
+
+  setCatalogStatus('');
+  const exercises = result.exercises || [];
+  renderCatalogList(exercises, async (exercise) => {
+    await onExercisePicked(exercise);
+  });
+
+  const sessionExercise = await getExerciseFromSession();
+  const restored =
+    findExerciseInList(exercises, preserveSelection) ||
+    findExerciseInList(exercises, sessionExercise);
+  if (restored) {
+    applyExerciseSelection(restored);
+  } else if (!preserveSelection) {
+    catalogState.selectedExercise = null;
+  }
+}
+
+async function getExerciseFromSession() {
+  const session = await window.blinkAuth?.getSession?.();
+  if (!session?.lessonId) return null;
+  return {
+    id: session.lessonId,
+    lessonId: session.lessonId,
+    url: session.exerciseUrl,
+    title: session.exerciseTitle || session.lessonId,
+  };
+}
+
+function onCatalogBack() {
+  if (catalogState.view === 'exercises') {
+    loadCatalogChapters();
+    return;
+  }
+  if (catalogState.view === 'chapters') {
+    if (catalogState.allBooks.length) {
+      const loadGen = beginCatalogLoad();
+      catalogState.view = 'books';
+      catalogState.bookId = null;
+      catalogState.chapterId = null;
+      catalogState.selectedExercise = null;
+      setCatalogSearchVisible(true);
+      catalogHeading.textContent = tt('ui.catalog.booksTitle');
+      setCatalogStatus('');
+      if (isCatalogLoadCurrent(loadGen)) renderCatalogBooks();
+    } else {
+      loadCatalogBooks();
+    }
+  }
 }
 
 function scheduleHideSuccessMessage() {
   if (successHideTimer) clearTimeout(successHideTimer);
-  stepSuccess.classList.remove('hidden');
+  stepSuccess.classList.remove('is-collapsed');
   successHideTimer = setTimeout(() => {
-    stepSuccess.classList.add('hidden');
+    stepSuccess.classList.add('is-collapsed');
   }, 10000);
 }
 
@@ -244,6 +538,7 @@ function handleProgressUpdate(payload) {
     trackNumber,
     pista,
     received,
+    hop,
   } = payload;
 
   if (payload.preview) {
@@ -260,19 +555,33 @@ function handleProgressUpdate(payload) {
   }
 
   let text = message || '';
-  if (!text && phase === 'resolve') text = tt('progress.resolveLink');
-  if (!text && phase === 'download') text = tt('progress.downloading');
-  if (!text && phase === 'track' && trackNumber) {
-    text = tt('progress.track', {
-      track: trackNumber,
-      pista: pista ? ` (${pista})` : '',
-    });
-  }
-  if (!text && index && total) {
-    text = tt('progress.fileOf', { index, total });
+  if (!text) {
+    if (phase === 'discover' && trackNumber != null) {
+      text = tt('audio.discoverTrack', { track: trackNumber, max: total || 100 });
+    } else if (phase === 'resolve' && trackNumber != null) {
+      text = tt('audio.discoverTrackProbe', {
+        track: trackNumber,
+        max: total || 100,
+        hop: hop ?? 1,
+      });
+    } else if (phase === 'resolve') {
+      text = tt('progress.resolveLink');
+    } else if (phase === 'download') {
+      text = tt('progress.downloading');
+    } else if (phase === 'track' && trackNumber) {
+      text = tt('progress.track', {
+        track: trackNumber,
+        pista: pista ? ` (${pista})` : '',
+      });
+    } else if (index && total) {
+      text = tt('progress.fileOf', { index, total });
+    }
   }
 
   let pct = percent;
+  if (pct === undefined && phase === 'discover' && trackNumber && total) {
+    pct = Math.round((trackNumber / total) * 100);
+  }
   if (pct === undefined && index && total && phase !== 'download') {
     pct = Math.round((index / total) * 100);
   }
@@ -353,21 +662,39 @@ function updateAudioActionButtons() {
 function setAudioControlsEnabled(enabled) {
   audioBusy = !enabled;
   downloadStartBtn.disabled = !enabled;
-  downloadAllBtn.disabled = !enabled;
+  downloadRangeBtn.disabled = !enabled;
+  downloadAutoAllBtn.disabled = !enabled;
   audioSingle.disabled = !enabled;
   audioFrom.disabled = !enabled;
   audioTo.disabled = !enabled;
   updateAudioActionButtons();
 }
 
-async function restoreLessonInput() {
-  const session = await window.blinkAuth?.getSession?.();
-  if (session?.lessonInput) {
-    lessonInput.value = session.lessonInput;
+async function restoreCatalogView() {
+  if (!isCatalogStepActive()) return;
+  if (catalogState.view === 'exercises' && catalogState.bookId && catalogState.chapterId) {
+    const sessionExercise = await getExerciseFromSession();
+    if (sessionExercise) catalogState.selectedExercise = sessionExercise;
+    await loadCatalogExercises();
+    return;
   }
+  if (catalogState.view === 'chapters' && catalogState.bookId) {
+    await loadCatalogChapters();
+    return;
+  }
+  if (catalogState.allBooks.length) {
+    catalogState.view = 'books';
+    setCatalogSearchVisible(true);
+    catalogHeading.textContent = tt('ui.catalog.booksTitle');
+    renderCatalogBooks();
+    return;
+  }
+  await loadCatalogBooks();
 }
 
 function showLoginStep(clearCredentials = false) {
+  appStep = 'login';
+  cancelCatalogLoads();
   hideAllSteps();
   stepLogin.classList.remove('hidden');
   subtitle.classList.remove('hidden');
@@ -379,44 +706,80 @@ function showLoginStep(clearCredentials = false) {
     rememberLogin.checked = false;
   }
 
-  lessonInput.value = '';
-  updateLessonNextVisibility();
-  instructionPanel.classList.add('hidden');
-  instructionToggle.setAttribute('aria-expanded', 'false');
+  catalogState.view = 'books';
+  catalogState.selectedExercise = null;
   if (successHideTimer) clearTimeout(successHideTimer);
   stepSuccess.textContent = tt('ui.lesson.authSuccess');
-  stepSuccess.classList.remove('hidden');
+  stepSuccess.classList.add('is-collapsed');
 }
 
 function showLessonStep(fromAuth = false) {
+  appStep = 'catalog';
   hideAllSteps();
   stepLesson.classList.remove('hidden');
   subtitle.classList.add('hidden');
   stepSuccess.classList.remove('step-success--error');
   if (fromAuth) {
     scheduleHideSuccessMessage();
+    loadCatalogBooks();
   } else {
-    stepSuccess.classList.add('hidden');
+    stepSuccess.classList.add('is-collapsed');
+    restoreCatalogView();
   }
-  lessonInput.focus();
-  updateLessonNextVisibility();
 }
 
-async function showAudioStep() {
-  hideAllSteps();
-  stepAudio.classList.remove('hidden');
-  subtitle.classList.add('hidden');
-  resetAudioForm();
-  audioSingle.focus();
-
-  hideDownloadProgress();
-
+function mountAudioProgressListener() {
   if (removeProgressListener) {
     removeProgressListener();
   }
   removeProgressListener = window.blinkAuth.onDownloadProgress?.((progress) => {
     handleProgressUpdate(progress);
   });
+}
+
+function showAudioStepUi(exerciseTitle) {
+  appStep = 'audio';
+  cancelCatalogLoads();
+  hideAllSteps();
+  stepAudio.classList.remove('hidden');
+  subtitle.classList.add('hidden');
+  resetAudioForm();
+
+  const audioHeading = document.querySelector('#step-audio .step-heading');
+  if (audioHeading && exerciseTitle) {
+    audioHeading.textContent = tt('ui.audio.headingWithExercise', { title: exerciseTitle });
+  } else if (audioHeading) {
+    audioHeading.textContent = tt('ui.audio.heading');
+  }
+
+  hideDownloadProgress();
+  mountAudioProgressListener();
+}
+
+async function goToAudioStep(exercise) {
+  if (!exercise) return false;
+
+  showAudioStepUi(exercise.title);
+  catalogState.selectedExercise = exercise;
+
+  try {
+    const result = await persistExerciseSelection(exercise);
+    if (!result?.ok) {
+      showAudioStatus(result?.message || tt('renderer.lessonIdFailed'), 'error');
+      return false;
+    }
+
+    clearAudioStatus();
+    try {
+      audioSingle.focus();
+    } catch {
+      /* ignore focus errors */
+    }
+    return true;
+  } catch (err) {
+    showAudioStatus(err?.message || tt('renderer.lessonIdFailed'), 'error');
+    return false;
+  }
 }
 
 async function loadSavedSettings() {
@@ -632,44 +995,19 @@ if (pickProxyBtn) {
   pickProxyBtn.addEventListener('click', onPickProxyClick);
 }
 
-instructionToggle.addEventListener('click', () => {
-  const hidden = instructionPanel.classList.toggle('hidden');
-  instructionToggle.setAttribute('aria-expanded', String(!hidden));
-});
-
-inputValidation.bindLessonInput(lessonInput, updateLessonNextVisibility);
-
-lessonNextBtn.addEventListener('click', async () => {
-  const raw = lessonInput.value.trim();
-  const check = resolveValidationMessage(inputValidation.validateLessonInput(raw));
-  if (!check.ok) {
-    stepSuccess.textContent = check.message;
-    stepSuccess.classList.remove('hidden');
-    stepSuccess.classList.add('step-success--error');
-    if (successHideTimer) clearTimeout(successHideTimer);
-    return;
-  }
-  stepSuccess.classList.remove('step-success--error');
-
-  const result = await window.blinkAuth.setLesson(raw);
-  if (!result?.ok) {
-    stepSuccess.textContent = result?.message || tt('renderer.lessonIdFailed');
-    stepSuccess.classList.add('step-success--error');
-    stepSuccess.classList.remove('hidden');
-    if (successHideTimer) clearTimeout(successHideTimer);
-    return;
-  }
-  stepSuccess.classList.remove('step-success--error');
-
-  await showAudioStep();
+catalogSearch.addEventListener('input', () => {
+  if (catalogState.view === 'books') renderCatalogBooks();
 });
 
 lessonBackBtn.addEventListener('click', () => {
+  if (catalogState.view === 'chapters' || catalogState.view === 'exercises') {
+    onCatalogBack();
+    return;
+  }
   showLoginStep(false);
 });
 
-audioBackBtn.addEventListener('click', async () => {
-  await restoreLessonInput();
+audioBackBtn.addEventListener('click', () => {
   showLessonStep(false);
 });
 
@@ -728,11 +1066,40 @@ previewAudioBtn.addEventListener('click', async () => {
   }
 });
 
-downloadAllBtn.addEventListener('click', () => {
+downloadRangeBtn.addEventListener('click', () => {
   downloadAllMode = true;
   audioRangeFields.classList.remove('hidden');
   stopAudioPreview();
   updateAudioActionButtons();
+});
+
+downloadAutoAllBtn.addEventListener('click', async () => {
+  clearAudioStatus();
+  hideDownloadProgress();
+  stopAudioPreview();
+  setAudioControlsEnabled(false);
+  showAudioStatus(tt('audio.discoverStart'), 'info');
+
+  try {
+    const result = await window.blinkAuth.downloadAudioAuto?.();
+    if (result?.canceled) {
+      hideDownloadProgress();
+      showAudioStatus(tt('renderer.downloadCanceled'), 'error');
+      return;
+    }
+    if (result?.ok) {
+      showDownloadProgress(tt('renderer.done'), 100);
+      showAudioStatus(result.message, 'success');
+    } else {
+      hideDownloadProgress();
+      showAudioStatus(result?.message || tt('renderer.downloadFailed'), 'error');
+    }
+  } catch (err) {
+    hideDownloadProgress();
+    showAudioStatus(err?.message || tt('renderer.downloadError'), 'error');
+  } finally {
+    setAudioControlsEnabled(true);
+  }
 });
 
 downloadStartBtn.addEventListener('click', async () => {

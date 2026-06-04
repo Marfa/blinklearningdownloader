@@ -102,43 +102,30 @@
       </section>
 
       <section id="step-lesson" class="hidden">
-        <p id="step-success" class="step-success" data-i18n="ui.lesson.authSuccess">
-          Авторизация прошла успешно.
-        </p>
+        <div id="step-success-wrap" class="step-success-wrap">
+          <p id="step-success" class="step-success is-collapsed" data-i18n="ui.lesson.authSuccess">
+            Авторизация прошла успешно.
+          </p>
+        </div>
 
-        <label class="field">
-          <span data-i18n="ui.lesson.idLabel">Укажите ID урока или ссылку</span>
+        <p id="catalog-heading" class="catalog-heading" data-i18n="ui.catalog.booksTitle">Учебники</p>
+
+        <label id="catalog-search-wrap" class="catalog-search-wrap hidden">
+          <span class="catalog-search-label" data-i18n="ui.catalog.searchLabel">Поиск по названию</span>
           <input
-            id="lesson-id"
-            name="lesson-id"
-            type="text"
+            id="catalog-search"
+            type="search"
+            class="catalog-search-input"
             autocomplete="off"
-            data-i18n-placeholder="ui.lesson.idPlaceholder"
-            placeholder="415263834 или ссылка из браузера"
+            data-i18n-placeholder="ui.catalog.searchPlaceholder"
+            placeholder="Введите часть названия…"
           />
         </label>
 
-        <button type="button" id="instruction-toggle" class="btn-secondary" aria-expanded="false" data-i18n="ui.lesson.instruction">
-          Инструкция
-        </button>
+        <p id="catalog-status" class="catalog-status hidden" role="status"></p>
 
-        <div id="instruction-panel" class="instruction-panel hidden">
-          <ul class="instruction-list">
-            <li data-i18n="ui.lesson.instruction1">откройте учебник или тетрадь</li>
-            <li data-i18n="ui.lesson.instruction2">перейдите в нужный урок</li>
-            <li data-i18n="ui.lesson.instruction3">
-              из строки браузера скопируйте последние цифры или укажите весь адрес полностью
-            </li>
-            <li data-i18n-html="ui.lesson.instruction4">
-              пример
-              <span class="instruction-url"
-                >https://www.blinklearning.com/v/1778658518/themes/tmpux/launch.php#responsive/book/4036150/415263834</span
-              >, где цифры после последнего слеша ваш ID (<strong>415263834</strong>)
-            </li>
-          </ul>
-        </div>
+        <ul id="catalog-list" class="catalog-list" role="list"></ul>
 
-        <button type="button" id="lesson-next-btn" class="btn-primary hidden" data-i18n="ui.lesson.next">Далее</button>
         <button type="button" id="lesson-back-btn" class="btn-back" data-i18n="ui.lesson.back">Назад</button>
         <button type="button" id="logout-btn" class="btn-outline" data-i18n="ui.lesson.logout">Выход</button>
       </section>
@@ -172,7 +159,11 @@
           <audio id="audio-player" controls preload="metadata"></audio>
         </div>
 
-        <button type="button" id="download-all-btn" class="btn-secondary" data-i18n="ui.audio.downloadAll">
+        <button type="button" id="download-range-btn" class="btn-secondary" data-i18n="ui.audio.downloadRange">
+          Скачать диапазон аудио
+        </button>
+
+        <button type="button" id="download-auto-all-btn" class="btn-secondary" data-i18n="ui.audio.downloadAutoAll">
           Скачать все аудио
         </button>
 
@@ -258,7 +249,7 @@
           <h2 id="help-modal-title" class="help-modal-title" data-i18n="ui.help.about">О программе</h2>
         </div>
         <p class="help-modal-version">
-          <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.1.2</span>
+          <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.1.3</span>
         </p>
         <p class="help-modal-link">
           <button type="button" id="help-github-link" class="help-github-link">

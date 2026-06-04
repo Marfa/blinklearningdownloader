@@ -32,9 +32,15 @@ try {
     getSettings: () => ipcRenderer.invoke('settings:get'),
     saveSettings: (partial) => ipcRenderer.invoke('settings:save', partial),
     setLesson: (rawInput) => ipcRenderer.invoke('session:setLesson', rawInput),
+    setExercise: (payload) => ipcRenderer.invoke('session:setExercise', payload),
     getSession: () => ipcRenderer.invoke('session:get'),
+    listBooks: () => ipcRenderer.invoke('catalog:listBooks'),
+    listChapters: (bookId) => ipcRenderer.invoke('catalog:listChapters', { bookId }),
+    listExercises: (bookId, chapterId) =>
+      ipcRenderer.invoke('catalog:listExercises', { bookId, chapterId }),
     logout: () => ipcRenderer.invoke('app:logout'),
     downloadAudio: (options) => ipcRenderer.invoke('audio:download', options),
+    downloadAudioAuto: () => ipcRenderer.invoke('audio:downloadAuto'),
     previewAudio: (trackNumber) => ipcRenderer.invoke('audio:preview', { trackNumber }),
     toMediaUrl,
     onDownloadProgress: (callback) => {

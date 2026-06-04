@@ -16,3 +16,6 @@ scripts/*.mp3
 scripts/audio-test-out/
 scripts/native.mp3
 scripts/test-stream.mp3
+path/
+scripts/probe-out/
+scripts/app-bundle-snippet.txt

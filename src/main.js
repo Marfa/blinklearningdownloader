@@ -9,11 +9,23 @@ const { authenticate } = require('./auth');
 const { readSettings, saveSettings, clearAuthCredentials } = require('./settings');
 const {
   setLessonInput,
+  setExerciseSelection,
   getSession,
   clearSession,
   getHttpClient,
 } = require('./session');
-const { resolveTrackNumbers, downloadTracks, prepareTrackPreview } = require('./audio');
+const {
+  resolveTrackNumbers,
+  downloadTracks,
+  downloadDiscoveredTracks,
+  prepareTrackPreview,
+} = require('./audio');
+const {
+  listBooks,
+  listChapters,
+  listExercises,
+  destroyCatalogWindow,
+} = require('./blink-catalog');
 const { t, getLocale } = require('./i18n');
 const { getAppVersion } = require('./version');
 const { checkForUpdate } = require('./update-check');
@@ -35,7 +47,11 @@ function resolveWindowIcon() {
 function createWindow() {
   const windowOptions = {
     width: 440,
-    height: 820,
+    height: 880,
+    minWidth: 440,
+    maxWidth: 440,
+    minHeight: 880,
+    maxHeight: 880,
     resizable: false,
     autoHideMenuBar: true,
     backgroundColor: '#eeeeee',
@@ -100,7 +116,124 @@ ipcMain.handle('session:setLesson', (_event, rawInput) => {
   return result;
 });
 
+ipcMain.handle('session:setExercise', (_event, payload) => {
+  const result = setExerciseSelection(payload);
+  if (result.ok) {
+    saveSettings({
+      lessonId: result.lessonId,
+      lessonInput: result.exerciseUrl || result.lessonId,
+    });
+  }
+  return result;
+});
+
 ipcMain.handle('session:get', () => getSession());
+
+ipcMain.handle('catalog:listBooks', async () => {
+  const locale = getLocale();
+  if (!getHttpClient()) {
+    return { ok: false, message: t('main.loginRequired', locale) };
+  }
+  try {
+    const books = await listBooks();
+    return { ok: true, books };
+  } catch (err) {
+    return {
+      ok: false,
+      message: mapCatalogError(err, locale),
+    };
+  }
+});
+
+function mapCatalogError(err, locale) {
+  const code = err?.message || '';
+  if (code === 'CATALOG_BLINK_TIMEOUT') return t('catalog.timeout', locale);
+  if (code === 'CATALOG_NOT_AUTHENTICATED') return t('main.loginRequired', locale);
+  if (code === 'CATALOG_USER_ID') return t('catalog.userIdFailed', locale);
+  return err?.message || t('catalog.loadBooksFailed', locale);
+}
+
+ipcMain.handle('catalog:listChapters', async (_event, { bookId }) => {
+  const locale = getLocale();
+  if (!getHttpClient()) {
+    return { ok: false, message: t('main.loginRequired', locale) };
+  }
+  try {
+    const chapters = await listChapters(bookId);
+    return { ok: true, chapters };
+  } catch (err) {
+    return {
+      ok: false,
+      message: mapCatalogError(err, locale),
+    };
+  }
+});
+
+ipcMain.handle('catalog:listExercises', async (_event, { bookId, chapterId }) => {
+  const locale = getLocale();
+  if (!getHttpClient()) {
+    return { ok: false, message: t('main.loginRequired', locale) };
+  }
+  try {
+    const exercises = await listExercises(bookId, chapterId);
+    return { ok: true, exercises };
+  } catch (err) {
+    return {
+      ok: false,
+      message: mapCatalogError(err, locale),
+    };
+  }
+});
+
+ipcMain.handle('audio:downloadAuto', async () => {
+  const client = getHttpClient();
+  const { lessonId } = getSession();
+  const locale = getLocale();
+
+  if (!client) {
+    return { ok: false, message: t('main.loginRequired', locale) };
+  }
+  if (!lessonId) {
+    return { ok: false, message: t('main.lessonRequired', locale) };
+  }
+
+  const defaultPath = getDefaultDownloadDir();
+  const folderResult = await dialog.showOpenDialog(mainWindow, {
+    title: t('main.folderDialogTitle', locale),
+    defaultPath,
+    properties: ['openDirectory', 'createDirectory'],
+  });
+
+  if (folderResult.canceled || !folderResult.filePaths?.length) {
+    return { ok: false, canceled: true, message: t('main.folderNotChosen', locale) };
+  }
+
+  const destDir = folderResult.filePaths[0];
+  saveSettings({ lastDownloadDir: destDir });
+
+  sendDownloadProgress({
+    phase: 'prepare',
+    message: t('audio.discoverStart', locale),
+    percent: 0,
+  });
+
+  try {
+    const { settings } = readSettings();
+    const result = await downloadDiscoveredTracks(
+      client,
+      lessonId,
+      destDir,
+      (progress) => sendDownloadProgress(progress),
+      settings.proxy,
+      100
+    );
+    return { ...result, destDir };
+  } catch (err) {
+    const message = err.message || t('main.downloadError', locale);
+    sendDownloadProgress({ phase: 'error', message });
+    return { ok: false, message, errors: [message] };
+  }
+});
 
 ipcMain.handle('audio:download', async (_event, options) => {
   const client = getHttpClient();
@@ -195,6 +328,7 @@ ipcMain.handle('audio:preview', async (_event, { trackNumber }) => {
 });
 
 ipcMain.handle('app:logout', async () => {
+  destroyCatalogWindow();
   clearAuthCredentials();
   clearSession();
   return { ok: true };
