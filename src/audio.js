@@ -6,8 +6,9 @@ const { createProxyDownloadClient } = require('./auth');
 const { t, getLocale, formatBytes } = require('./i18n');
 
 const AUDIO_BASE_URL = 'https://www.blinklearning.com/useruploads/r/a';
-const LAUNCH_REFERER =
-  'https://www.blinklearning.com/v/1778658518/themes/tmpux/launch.php';
+const { LAUNCH_BASE } = require('./blink-constants');
+
+const LAUNCH_REFERER = LAUNCH_BASE;
 
 const MAX_REDIRECTS = 12;
 const DOWNLOAD_RETRIES = 3;
@@ -121,6 +122,7 @@ async function resolveDownloadUrl(client, startUrl, onProgress) {
   for (let hop = 0; hop < MAX_REDIRECTS; hop += 1) {
     onProgress?.({
       phase: 'resolve',
+      hop: hop + 1,
       message: t('audio.resolveLink', locale, { hop: hop + 1 }),
     });
 
@@ -508,6 +510,99 @@ async function downloadTracks(client, lessonId, tracks, destDir, onProgress, pro
   };
 }
 
+async function probeTrackAvailable(client, lessonId, trackNumber) {
+  for (const pista of buildPistaNames(trackNumber)) {
+    const entryUrl = buildAudioUrl(lessonId, pista);
+    const resolved = await resolveDownloadUrl(client, entryUrl, null);
+    if (resolved.ok) return true;
+  }
+  return false;
+}
+
+async function downloadDiscoveredTracks(
+  client,
+  lessonId,
+  destDir,
+  onProgress,
+  proxy,
+  maxTrack = 100
+) {
+  const locale = getLocale();
+  const results = [];
+  let foundAny = false;
+
+  for (let trackNumber = 1; trackNumber <= maxTrack; trackNumber += 1) {
+    onProgress?.({
+      phase: 'discover',
+      trackNumber,
+      total: maxTrack,
+      message: t('audio.discoverTrack', locale, { track: trackNumber, max: maxTrack }),
+      percent: Math.round(((trackNumber - 1) / maxTrack) * 100),
+    });
+
+    const result = await downloadOneTrack(
+      client,
+      lessonId,
+      trackNumber,
+      destDir,
+      (payload) => {
+        if (payload.phase === 'resolve') {
+          onProgress?.({
+            phase: 'discover',
+            trackNumber,
+            total: maxTrack,
+            hop: payload.hop ?? 1,
+            message: t('audio.discoverTrackProbe', locale, {
+              track: trackNumber,
+              max: maxTrack,
+              hop: payload.hop ?? 1,
+            }),
+            percent: Math.round(((trackNumber - 0.5) / maxTrack) * 100),
+          });
+          return;
+        }
+        onProgress?.({ ...payload, trackNumber, total: maxTrack });
+      },
+      proxy
+    );
+
+    if (result.ok) {
+      foundAny = true;
+      results.push(result);
+      continue;
+    }
+
+    if (!foundAny) continue;
+    break;
+  }
+
+  if (!foundAny) {
+    return {
+      ok: false,
+      downloaded: 0,
+      failed: 0,
+      total: 0,
+      results: [],
+      message: t('audio.discoverNone', locale),
+      errors: [t('audio.discoverNone', locale)],
+    };
+  }
+
+  const downloaded = results.filter((r) => r.ok).length;
+  const failed = 0;
+  const message = t('audio.summaryDownloaded', locale, { count: downloaded });
+
+  return {
+    ok: downloaded > 0,
+    downloaded,
+    failed,
+    total: results.length,
+    results,
+    message,
+    errors: [],
+  };
+}
+
 module.exports = {
   AUDIO_BASE_URL,
   LAUNCH_REFERER,
@@ -517,5 +612,7 @@ module.exports = {
   resolveDownloadUrl,
   downloadOneTrack,
   downloadTracks,
+  downloadDiscoveredTracks,
+  probeTrackAvailable,
   prepareTrackPreview,
 };

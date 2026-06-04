@@ -6,8 +6,9 @@ const { HttpCookieAgent, HttpsCookieAgent } = require('http-cookie-agent/http');
 const { setAuthenticatedClient } = require('./session');
 const { t, getLocale } = require('./i18n');
 
-const LAUNCH_URL =
-  'https://www.blinklearning.com/v/1778658518/themes/tmpux/launch.php';
+const { LAUNCH_BASE } = require('./blink-constants');
+
+const LAUNCH_URL = LAUNCH_BASE;
 const LOGIN_URL = 'https://www.blinklearning.com/login';
 const COLABORADOR_URL = 'https://www.blinklearning.com/LMS/colaborador.php';
 const SESSION_COOKIE = 'BLINKSESSIONPROD';
@@ -172,7 +173,7 @@ function isLaunchAccessible(html, url, status) {
     return true;
   }
 
-  return url.includes('/v/1778658518/');
+  return /\/v\/\d+\/themes\/tmpux\/launch\.php/.test(url);
 }
 
 async function fetchPage(client, url) {
