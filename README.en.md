@@ -10,10 +10,10 @@ Latest builds: [GitHub Releases](https://github.com/Marfa/blinklearningdownloade
 
 | Platform | File | Description |
 |----------|------|-------------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.4.exe` | NSIS installer |
-| Windows | `BlinkLearning-Downloader-1.1.4-win-x64-portable.exe` | Portable single `.exe` (no install) |
-| Windows | `BlinkLearning-Downloader-1.1.4-win-x64.zip` | ZIP of the unpacked app folder |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.4-mac-arm64.zip` | `.app` in a zip |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.5.exe` | NSIS installer |
+| Windows | `BlinkLearning-Downloader-1.1.5-win-x64-portable.exe` | Portable single `.exe` (no install) |
+| Windows | `BlinkLearning-Downloader-1.1.5-win-x64.zip` | ZIP of the unpacked app folder |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.5-mac-arm64.zip` | `.app` in a zip |
 
 > **Android:** no mobile build — Electron desktop only.
 
@@ -22,7 +22,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 ## Features
 
 1. **Sign in** — BlinkLearning credentials; optional “Remember username and password”.
-2. **Proxy** — optional SOCKS5 (manual or **Find proxy** via proxy-tools.com / x.com check).
+2. **Proxy** — optional SOCKS5 (manual or **Find proxy** — SOCKS5 list from [proxyscrape.com](https://proxyscrape.com/free-proxy-list), checked against blinklearning.com).
 3. **Catalog** — textbooks (search, alphabetical), chapters, exercises; locked books show **Faltan Licencias**. Picking an exercise opens the audio download step.
 4. **Audio** — one track, a range (**Download audio range**), or **Download all audio** (probes tracks 01–100).
 5. **Listen** — preview a single track in the app.
@@ -30,6 +30,11 @@ See [CHANGELOG.md](CHANGELOG.md).
 7. **Language** — RU/EN toggle, saved locally.
 8. **Updates** — notice when a newer GitHub release is available.
 9. **About** — version and repository link.
+
+### What’s new in 1.1.5
+
+- SOCKS5 picker from proxyscrape.com; proxy check uses BlinkLearning reachability.
+- More reliable textbook catalog loading (timeouts, proxy session).
 
 ### What’s new in 1.1.4
 
@@ -57,13 +62,19 @@ npm run check:i18n
 npm run dist:win
 ```
 
+**Release folder** (`release-build/`):
+
+```bash
+npm run dist:release
+```
+
 **macOS** (Apple Silicon):
 
 ```bash
 npm run dist:mac
 ```
 
-Default Windows output: `C:\Temp\blinklearningdownloader-build\`.
+Default `dist:win` output: `C:\Temp\blinklearningdownloader-build\`.
 
 ## Command-line checks
 
@@ -76,6 +87,8 @@ $env:BLINK_PASSWORD="your-password"
 node scripts/test-auth.js
 node scripts/test-catalog.js
 ```
+
+Do not commit real credentials. Local debug output lives under `scripts/probe-out/` (gitignored).
 
 ## License
 

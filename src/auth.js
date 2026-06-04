@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { SocksProxyAgent } = require('socks-proxy-agent');
+const { socks5hAgentUrl } = require('./socks5-agent');
 const { CookieJar } = require('tough-cookie');
 const { HttpCookieAgent, HttpsCookieAgent } = require('http-cookie-agent/http');
 const { setAuthenticatedClient } = require('./session');
@@ -36,7 +37,7 @@ function createClient(proxy) {
   let httpsAgent;
 
   if (proxy.enabled) {
-    const socksAgent = new SocksProxyAgent(`socks5://${proxy.host}:${proxy.port}`);
+    const socksAgent = new SocksProxyAgent(socks5hAgentUrl(proxy.host, proxy.port));
     httpAgent = new HttpCookieAgent({ ...cookieOptions, agent: socksAgent });
     httpsAgent = new HttpsCookieAgent({ ...cookieOptions, agent: socksAgent });
   } else {
@@ -71,7 +72,7 @@ function createProxyDownloadClient(proxy) {
   if (!effectiveProxy.enabled) return null;
 
   const socksAgent = new SocksProxyAgent(
-    `socks5://${effectiveProxy.host}:${effectiveProxy.port}`
+    socks5hAgentUrl(effectiveProxy.host, effectiveProxy.port)
   );
 
   return axios.create({

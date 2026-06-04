@@ -2,6 +2,23 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
 
+## [1.1.5] — 2026-05-22
+
+### Изменено
+
+- **Подбор прокси**: список SOCKS5 с [proxyscrape.com](https://proxyscrape.com/free-proxy-list) (API и страница), порты из списка без угадывания; проверка доступа к [blinklearning.com](https://www.blinklearning.com/), а не к сторонним сайтам.
+- Каталог учебников: таймауты загрузки и скриптов, единая SOCKS5-сессия при прокси, сброс окна каталога при входе/выходе — устранены зависания «Загрузка списка учебников…».
+- Авторизация и HTTP-клиент: удалённый DNS через прокси (`socks5h`).
+
+### Исправлено
+
+- Сообщения об ошибках каталога (истёкшая сессия, таймаут страницы/скрипта).
+- Переводы этапов подбора прокси (RU/EN), в том числе запасной список.
+
+### Безопасность
+
+- Учётные данные для разработки **не хранятся в репозитории**; скрипты в `scripts/` читают только `BLINK_EMAIL` / `BLINK_PASSWORD` из окружения. Локальные артефакты отладки — в `scripts/probe-out/` (в `.gitignore`).
+
 ## [1.1.4] — 2026-06-04
 
 ### Изменено
@@ -71,6 +88,7 @@
 
 - Первая версия для Windows: вход, SOCKS5, скачивание MP3 по ID урока или ссылке, один трек или диапазон.
 
+[1.1.5]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.1...v1.1.2
