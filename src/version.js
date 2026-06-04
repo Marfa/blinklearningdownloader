@@ -32,7 +32,7 @@ function getAppVersion() {
   } catch {
     /* preload or non-electron context */
   }
-  return readVersionFromPackageJson() || '1.1.3';
+  return readVersionFromPackageJson() || '1.1.4';
 }
 
 module.exports = { getAppVersion };

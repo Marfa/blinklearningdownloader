@@ -10,10 +10,10 @@ Latest builds: [GitHub Releases](https://github.com/Marfa/blinklearningdownloade
 
 | Platform | File | Description |
 |----------|------|-------------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.3.exe` | NSIS installer |
-| Windows | `BlinkLearning-Downloader-1.1.3-win-x64-portable.exe` | Portable single `.exe` (no install) |
-| Windows | `BlinkLearning-Downloader-1.1.3-win-x64.zip` | ZIP of the unpacked app folder |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.3-mac-arm64.zip` | `.app` in a zip |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.4.exe` | NSIS installer |
+| Windows | `BlinkLearning-Downloader-1.1.4-win-x64-portable.exe` | Portable single `.exe` (no install) |
+| Windows | `BlinkLearning-Downloader-1.1.4-win-x64.zip` | ZIP of the unpacked app folder |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.4-mac-arm64.zip` | `.app` in a zip |
 
 > **Android:** no mobile build — Electron desktop only.
 
@@ -30,6 +30,10 @@ See [CHANGELOG.md](CHANGELOG.md).
 7. **Language** — RU/EN toggle, saved locally.
 8. **Updates** — notice when a newer GitHub release is available.
 9. **About** — version and repository link.
+
+### What’s new in 1.1.4
+
+- Licensed textbooks listed first; **Libro Digital** sorted above **HTML con actividades**.
 
 ### What’s new in 1.1.3
 
