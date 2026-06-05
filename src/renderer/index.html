@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; media-src 'self' file:; img-src 'self' data:"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; media-src 'self' file:; img-src 'self' data: https://proxys.world"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlinkLearning</title>
@@ -92,6 +92,20 @@
               data-i18n="ui.login.pickProxy"
             >
               Подобрать прокси
+            </button>
+            <button
+              type="button"
+              id="proxy-ad-banner"
+              class="proxy-ad-banner hidden"
+              aria-label="proxys.world"
+            >
+              <img
+                src="https://proxys.world/img/b/new_light_900x60.gif"
+                alt="proxys.world"
+                width="900"
+                height="60"
+                decoding="async"
+              />
             </button>
           </div>
 
@@ -220,8 +234,8 @@
       class="fab-btn update-notice hidden"
       data-i18n-aria="ui.update.aria"
       data-i18n-title="ui.update.aria"
-      aria-label="Open the new version download page"
-      title="Open the new version download page"
+      aria-label="Update application"
+      title="Update application"
     >
       <svg class="fab-icon" aria-hidden="true"><use href="#icon-update"></use></svg>
       <span class="update-notice-label" data-i18n="ui.update.available">Доступна новая версия</span>
@@ -257,11 +271,27 @@
           <h2 id="help-modal-title" class="help-modal-title" data-i18n="ui.help.about">О программе</h2>
         </div>
         <p class="help-modal-version">
-          <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.1.5</span>
+          <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.1.6</span><span
+            id="help-version-update"
+            class="help-version-update hidden"
+          ></span>
         </p>
         <p class="help-modal-link">
-          <button type="button" id="help-github-link" class="help-github-link">
+          <span class="help-link-label" data-i18n="ui.help.sourceCode">Исходный код</span>
+          <button type="button" id="help-github-link" class="help-external-link">
             github.com/Marfa/blinklearningdownloader
+          </button>
+        </p>
+        <p class="help-modal-link">
+          <span class="help-link-label" data-i18n="ui.help.donate">Донат</span>
+          <button type="button" id="help-donate-link" class="help-external-link">
+            donationalerts.com/r/themarfa
+          </button>
+        </p>
+        <p class="help-modal-link">
+          <span class="help-link-label" data-i18n="ui.help.donateCrypto">Донат криптой</span>
+          <button type="button" id="help-donate-crypto-link" class="help-external-link">
+            nowpayments.io/donation/themarfa
           </button>
         </p>
         <button type="button" id="help-modal-close" class="btn-secondary help-modal-close" data-i18n="ui.help.close">

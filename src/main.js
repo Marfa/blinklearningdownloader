@@ -3,7 +3,16 @@ const fs = require('fs');
 
 const GITHUB_REPO_URL = 'https://github.com/Marfa/blinklearningdownloader';
 const GITHUB_RELEASES_URL = 'https://github.com/Marfa/blinklearningdownloader/releases';
-const ALLOWED_EXTERNAL_URLS = new Set([GITHUB_REPO_URL, GITHUB_RELEASES_URL]);
+const DONATE_URL = 'https://www.donationalerts.com/r/themarfa';
+const DONATE_CRYPTO_URL = 'https://nowpayments.io/donation/themarfa';
+const PROXY_AD_URL = 'https://proxys.world/?refid=41873';
+const ALLOWED_EXTERNAL_URLS = new Set([
+  GITHUB_REPO_URL,
+  GITHUB_RELEASES_URL,
+  DONATE_URL,
+  DONATE_CRYPTO_URL,
+  PROXY_AD_URL,
+]);
 const path = require('path');
 const { authenticate } = require('./auth');
 const { readSettings, saveSettings, clearAuthCredentials } = require('./settings');
@@ -30,6 +39,11 @@ const { t, getLocale } = require('./i18n');
 const { getAppVersion } = require('./version');
 const { checkForUpdate } = require('./update-check');
 const { pickWorkingSocks5Proxy } = require('./proxy-picker');
+const {
+  initAutoUpdater,
+  setUpdateProgressHandler,
+  downloadAndInstall,
+} = require('./auto-update');
 
 let mainWindow;
 
@@ -77,6 +91,12 @@ function sendDownloadProgress(payload) {
   }
 }
 
+function sendUpdateProgress(payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('app:updateProgress', payload);
+  }
+}
+
 function sendProxyPickProgress(payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('proxy:progress', payload);
@@ -88,7 +108,11 @@ function getDefaultDownloadDir() {
   return settings.lastDownloadDir || app.getPath('downloads');
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  initAutoUpdater();
+  setUpdateProgressHandler(sendUpdateProgress);
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
@@ -360,6 +384,36 @@ ipcMain.handle('app:logout', async () => {
 ipcMain.handle('app:getVersion', () => getAppVersion());
 
 ipcMain.handle('app:checkForUpdate', () => checkForUpdate());
+
+ipcMain.handle('app:promptUpdate', async () => {
+  const locale = getLocale();
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: 'question',
+    buttons: [t('update.yes', locale), t('update.no', locale)],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+    title: t('update.promptTitle', locale),
+    message: t('update.promptMessage', locale),
+  });
+
+  if (response !== 0) {
+    return { ok: false, cancelled: true };
+  }
+
+  const result = await downloadAndInstall();
+  if (result.ok) {
+    return { ok: true, installing: true };
+  }
+
+  if (result.reason === 'notPackaged') {
+    return { ok: false, message: t('update.notPackaged', locale) };
+  }
+  if (result.reason === 'none') {
+    return { ok: false, message: t('update.none', locale) };
+  }
+  return { ok: false, message: result.message || t('update.failed', locale) };
+});
 
 ipcMain.handle('app:openExternal', async (_event, url) => {
   if (ALLOWED_EXTERNAL_URLS.has(url)) {

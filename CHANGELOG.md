@@ -2,6 +2,18 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
 
+## [1.1.6] — 2026-06-05
+
+### Добавлено
+
+- **Автообновление**: по кнопке уведомления — запрос «Обновить приложение?»; при согласии загрузка и установка из GitHub Releases (`electron-updater`, `latest.yml` / `latest-mac.yml`).
+- Раздел **«О программе»**: пометка о доступной версии, подпись «Исходный код» перед ссылкой на репозиторий, ссылки на донат ([DonationAlerts](https://www.donationalerts.com/r/themarfa)) и донат криптой ([NOWPayments](https://nowpayments.io/donation/themarfa)).
+- Рекламный баннер [proxys.world](https://proxys.world/?refid=41873) под кнопкой «Подобрать прокси» (только русский интерфейс и включённый SOCKS5).
+
+### Изменено
+
+- Белый список внешних ссылок в main-процессе: GitHub, донаты, proxys.world.
+
 ## [1.1.5] — 2026-05-22
 
 ### Изменено
@@ -88,6 +100,7 @@
 
 - Первая версия для Windows: вход, SOCKS5, скачивание MP3 по ID урока или ссылке, один трек или диапазон.
 
+[1.1.6]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.2...v1.1.3

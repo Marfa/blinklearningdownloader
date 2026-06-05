@@ -318,6 +318,27 @@ input:focus {
   margin-top: 2px;
 }
 
+.proxy-ad-banner {
+  grid-column: 1 / -1;
+  display: block;
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.proxy-ad-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 60px;
+  object-fit: contain;
+  object-position: left center;
+}
+
 .catalog-heading {
   margin: 0 0 10px;
   font-size: 0.95rem;
@@ -726,11 +747,25 @@ button[type='submit']:disabled {
   color: var(--text);
 }
 
-.help-modal-link {
-  margin: 0 0 16px;
+.help-version-update {
+  color: var(--text-muted, #666);
 }
 
-.help-github-link {
+.help-modal-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0 0 12px;
+}
+
+.help-link-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.help-external-link {
   padding: 0;
   border: none;
   background: none;
@@ -743,7 +778,7 @@ button[type='submit']:disabled {
   word-break: break-all;
 }
 
-.help-github-link:hover {
+.help-external-link:hover {
   color: var(--accent-hover);
 }
 
