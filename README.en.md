@@ -10,10 +10,10 @@ Latest builds: [GitHub Releases](https://github.com/Marfa/blinklearningdownloade
 
 | Platform | File | Description |
 |----------|------|-------------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.5.exe` | NSIS installer |
-| Windows | `BlinkLearning-Downloader-1.1.5-win-x64-portable.exe` | Portable single `.exe` (no install) |
-| Windows | `BlinkLearning-Downloader-1.1.5-win-x64.zip` | ZIP of the unpacked app folder |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.5-mac-arm64.zip` | `.app` in a zip |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.6.exe` | NSIS installer |
+| Windows | `BlinkLearning-Downloader-1.1.6-win-x64-portable.exe` | Portable single `.exe` (no install) |
+| Windows | `BlinkLearning-Downloader-1.1.6-win-x64.zip` | ZIP of the unpacked app folder |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.6-mac-arm64.zip` | `.app` in a zip |
 
 > **Android:** no mobile build — Electron desktop only.
 
@@ -28,8 +28,13 @@ See [CHANGELOG.md](CHANGELOG.md).
 5. **Listen** — preview a single track in the app.
 6. **Download** — folder picker and progress.
 7. **Language** — RU/EN toggle, saved locally.
-8. **Updates** — notice when a newer GitHub release is available.
-9. **About** — version and repository link.
+8. **Updates** — notice when a newer release is available; the button asks “Update application?” and installs from [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases) if confirmed.
+9. **About** — version (with available update note) and source code link.
+
+### What’s new in 1.1.6
+
+- In-app auto-update from the release notification (confirmation dialog).
+- Improved About dialog.
 
 ### What’s new in 1.1.5
 
@@ -68,10 +73,17 @@ npm run dist:win
 npm run dist:release
 ```
 
-**macOS** (Apple Silicon):
+**macOS** (Apple Silicon), output `release-build/mac/`:
 
 ```bash
-npm run dist:mac
+npm run dist:mac -- -c.directories.output=release-build/mac
+```
+
+Full release set:
+
+```bash
+npm run dist:release
+npm run dist:mac -- -c.directories.output=release-build/mac
 ```
 
 Default `dist:win` output: `C:\Temp\blinklearningdownloader-build\`.

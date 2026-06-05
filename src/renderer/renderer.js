@@ -10,6 +10,9 @@ const proxyFields = document.getElementById('proxy-fields');
 const proxyHost = document.getElementById('proxy-host');
 const proxyPort = document.getElementById('proxy-port');
 const pickProxyBtn = document.getElementById('pick-proxy-btn');
+const proxyAdBanner = document.getElementById('proxy-ad-banner');
+
+const PROXY_AD_URL = 'https://proxys.world/?refid=41873';
 const statusEl = document.getElementById('status');
 const submitBtn = document.getElementById('submit-btn');
 const catalogHeading = document.getElementById('catalog-heading');
@@ -221,6 +224,8 @@ function applyLocale() {
 
     updateLangButton();
     updateNoticeLabel();
+    updateHelpVersionLabel();
+    updateProxyAdBanner();
 
     if (!stepLogin.classList.contains('hidden')) {
       subtitle.textContent = tt('ui.login.subtitle');
@@ -272,6 +277,14 @@ function applyProxyToForm(proxy) {
   proxyHost.value = proxy?.host || '';
   proxyPort.value = proxy?.enabled && proxy?.port ? String(proxy.port) : '';
   proxyFields.classList.toggle('hidden', !useProxy.checked);
+  updateProxyAdBanner();
+}
+
+function updateProxyAdBanner() {
+  if (!proxyAdBanner) return;
+  const locale = window.BlinkLocale?.getLocale?.() ?? 'ru';
+  const visible = locale === 'ru' && useProxy.checked;
+  proxyAdBanner.classList.toggle('hidden', !visible);
 }
 
 function setCatalogStatus(message, isError = false) {
@@ -815,20 +828,27 @@ async function handleLogout() {
 }
 
 const GITHUB_REPO_URL = 'https://github.com/Marfa/blinklearningdownloader';
-const GITHUB_RELEASES_URL = 'https://github.com/Marfa/blinklearningdownloader/releases';
+const DONATE_URL = 'https://www.donationalerts.com/r/themarfa';
+const DONATE_CRYPTO_URL = 'https://nowpayments.io/donation/themarfa';
 
 const updateNotice = document.getElementById('update-notice');
 const helpBtn = document.getElementById('help-btn');
 const helpModal = document.getElementById('help-modal');
 const helpVersion = document.getElementById('help-version');
+const helpVersionUpdate = document.getElementById('help-version-update');
 const helpGithubLink = document.getElementById('help-github-link');
+const helpDonateLink = document.getElementById('help-donate-link');
+const helpDonateCryptoLink = document.getElementById('help-donate-crypto-link');
 const helpModalClose = document.getElementById('help-modal-close');
 const helpModalBackdrop = document.getElementById('help-modal-backdrop');
 
-function openHelpModal() {
+let latestAvailableVersion = null;
+
+async function openHelpModal() {
   loadAppVersion();
   helpModal.classList.remove('hidden');
   helpModalClose.focus();
+  await refreshHelpVersionFromUpdateCheck();
 }
 
 function closeHelpModal() {
@@ -838,7 +858,36 @@ function closeHelpModal() {
 
 function loadAppVersion() {
   const version = window.blinkAuth?.getVersion?.();
-  helpVersion.textContent = version || '1.1.5';
+  helpVersion.textContent = version || '1.1.6';
+  updateHelpVersionLabel();
+}
+
+function updateHelpVersionLabel() {
+  if (!helpVersionUpdate) return;
+  if (latestAvailableVersion) {
+    helpVersionUpdate.textContent = ` ${tt('ui.help.versionAvailable', { version: latestAvailableVersion })}`;
+    helpVersionUpdate.classList.remove('hidden');
+  } else {
+    helpVersionUpdate.textContent = '';
+    helpVersionUpdate.classList.add('hidden');
+  }
+}
+
+async function refreshHelpVersionFromUpdateCheck() {
+  if (!window.blinkAuth?.checkForUpdate) return;
+
+  try {
+    const result = await window.blinkAuth.checkForUpdate();
+    if (result.ok && result.updateAvailable && result.latestVersion) {
+      latestAvailableVersion = result.latestVersion;
+    } else {
+      latestAvailableVersion = null;
+    }
+  } catch (err) {
+    console.error('refreshHelpVersionFromUpdateCheck failed', err);
+  }
+
+  updateHelpVersionLabel();
 }
 
 function updateNoticeLabel() {
@@ -860,19 +909,59 @@ async function checkAppUpdate() {
   try {
     const result = await window.blinkAuth.checkForUpdate();
     if (result.ok && result.updateAvailable && result.latestVersion) {
+      latestAvailableVersion = result.latestVersion;
       updateNotice.dataset.latestVersion = result.latestVersion;
       updateNotice.classList.remove('hidden');
       updateNoticeLabel();
+      updateHelpVersionLabel();
     }
   } catch (err) {
     console.error('checkForUpdate failed', err);
   }
 }
 
-if (updateNotice) {
-  updateNotice.addEventListener('click', () => {
-    window.blinkAuth?.openExternal?.(GITHUB_RELEASES_URL);
+let removeUpdateProgressListener = null;
+
+function updateProgressStatusText(progress) {
+  if (!progress?.phase) return '';
+  switch (progress.phase) {
+    case 'checking':
+      return tt('ui.update.checking');
+    case 'downloading':
+      return tt('ui.update.downloading', { percent: progress.percent ?? 0 });
+    case 'installing':
+      return tt('ui.update.installing');
+    default:
+      return '';
+  }
+}
+
+async function onUpdateNoticeClick() {
+  if (!window.blinkAuth?.promptUpdate) return;
+
+  removeUpdateProgressListener?.();
+  removeUpdateProgressListener = window.blinkAuth.onUpdateProgress?.((progress) => {
+    const text = updateProgressStatusText(progress);
+    if (text) showStatus(text, 'info');
   });
+
+  try {
+    const result = await window.blinkAuth.promptUpdate();
+    if (result?.cancelled) return;
+    if (!result?.ok && result?.message) {
+      showStatus(result.message, 'error');
+    }
+  } catch (err) {
+    console.error('promptUpdate failed', err);
+    showStatus(tt('update.failed'), 'error');
+  } finally {
+    removeUpdateProgressListener?.();
+    removeUpdateProgressListener = null;
+  }
+}
+
+if (updateNotice) {
+  updateNotice.addEventListener('click', onUpdateNoticeClick);
 }
 
 helpBtn.addEventListener('click', openHelpModal);
@@ -881,6 +970,14 @@ helpModalBackdrop.addEventListener('click', closeHelpModal);
 
 helpGithubLink.addEventListener('click', () => {
   window.blinkAuth?.openExternal?.(GITHUB_REPO_URL);
+});
+
+helpDonateLink.addEventListener('click', () => {
+  window.blinkAuth?.openExternal?.(DONATE_URL);
+});
+
+helpDonateCryptoLink.addEventListener('click', () => {
+  window.blinkAuth?.openExternal?.(DONATE_CRYPTO_URL);
 });
 
 document.addEventListener('keydown', (event) => {
@@ -914,8 +1011,15 @@ checkAppUpdate();
 
 useProxy.addEventListener('change', () => {
   proxyFields.classList.toggle('hidden', !useProxy.checked);
+  updateProxyAdBanner();
   saveProxySettings();
 });
+
+if (proxyAdBanner) {
+  proxyAdBanner.addEventListener('click', () => {
+    window.blinkAuth?.openExternal?.(PROXY_AD_URL);
+  });
+}
 
 proxyHost.addEventListener('change', saveProxySettings);
 proxyPort.addEventListener('change', saveProxySettings);
@@ -957,6 +1061,7 @@ async function onPickProxyClick() {
   if (!useProxy.checked) {
     useProxy.checked = true;
     proxyFields.classList.remove('hidden');
+    updateProxyAdBanner();
   }
 
   setProxyPickBusy(true);

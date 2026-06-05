@@ -1,6 +1,6 @@
 {
   "name": "blinklearningdownloader",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "BlinkLearning audio downloader for Windows and macOS",
   "main": "src/main.js",
   "scripts": {
@@ -25,6 +25,7 @@
   "dependencies": {
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
+    "electron-updater": "^6.8.3",
     "http-cookie-agent": "^6.0.8",
     "socks-proxy-agent": "^8.0.5",
     "tough-cookie": "^5.1.0"
@@ -68,6 +69,11 @@
       "src/**/*",
       "assets/**/*",
       "package.json"
-    ]
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "Marfa",
+      "repo": "blinklearningdownloader"
+    }
   }
 }
