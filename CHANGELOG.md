@@ -2,6 +2,12 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
 
+## [1.1.7] — 2026-06-22
+
+### Изменено
+
+- **Обновления**: уведомление о новой версии только если в релизе есть артефакты для вашей ОС (macOS не предлагает обновление при релизе только для Windows, и наоборот).
+
 ## [1.1.6] — 2026-06-05
 
 ### Добавлено
@@ -100,6 +106,7 @@
 
 - Первая версия для Windows: вход, SOCKS5, скачивание MP3 по ID урока или ссылке, один трек или диапазон.
 
+[1.1.7]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.6...v1.1.7
 [1.1.6]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/Marfa/blinklearningdownloader/compare/v1.1.3...v1.1.4

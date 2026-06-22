@@ -10,10 +10,10 @@
 
 | Платформа | Файл | Описание |
 |-----------|------|----------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.6.exe` | Установщик (NSIS) |
-| Windows | `BlinkLearning-Downloader-1.1.6-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
-| Windows | `BlinkLearning-Downloader-1.1.6-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.6-mac-arm64.zip` | Приложение `.app` в архиве |
+| Windows | `BlinkLearning-Downloader-Setup-1.1.7.exe` | Установщик (NSIS) |
+| Windows | `BlinkLearning-Downloader-1.1.7-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
+| Windows | `BlinkLearning-Downloader-1.1.7-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.7-mac-arm64.zip` | Приложение `.app` в архиве |
 
 > **Android:** мобильной сборки нет — проект основан на Electron для настольных ОС.
 
@@ -32,6 +32,10 @@
 7. **Язык** — переключение русский / английский; выбор сохраняется локально.
 8. **Обновления** — уведомление о новой версии; по кнопке — запрос «Обновить приложение?», при согласии загрузка и установка из [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases).
 9. **О программе** — версия (с пометкой о доступном обновлении) и ссылка на исходный код.
+
+### Что нового в 1.1.7
+
+- Уведомление об обновлении только для вашей платформы (macOS / Windows).
 
 ### Что нового в 1.1.6
 

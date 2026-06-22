@@ -858,7 +858,7 @@ function closeHelpModal() {
 
 function loadAppVersion() {
   const version = window.blinkAuth?.getVersion?.();
-  helpVersion.textContent = version || '1.1.6';
+  helpVersion.textContent = version || '1.1.7';
   updateHelpVersionLabel();
 }
 
