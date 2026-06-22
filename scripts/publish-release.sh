@@ -4,7 +4,7 @@
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="1.1.6"
+VERSION="1.1.7"
 TAG="v${VERSION}"
 RELEASE_DIR="${ROOT}/release-build"
 
@@ -37,7 +37,7 @@ git tag -f "${TAG}" 2>/dev/null || git tag "${TAG}"
 git push origin "${TAG}" --force-with-lease 2>/dev/null || git push origin "${TAG}"
 
 NOTES_FILE="${ROOT}/CHANGELOG.md"
-BODY="$(awk '/^## \[1.1.6\]/,/^## \[1.1.5\]/' "$NOTES_FILE" | sed '1d;$d')"
+BODY="$(awk '/^## \[1.1.7\]/,/^## \[1.1.6\]/' "$NOTES_FILE" | sed '1d;$d')"
 
 echo "Creating GitHub release ${TAG}..."
 gh release delete "${TAG}" -y 2>/dev/null || true
