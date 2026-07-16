@@ -223,10 +223,15 @@ function normalizeTitle(value, fallback) {
   return title || fallback;
 }
 
+function compareTitles(a, b) {
+  return String(a || '').localeCompare(String(b || ''), undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+}
+
 function sortByTitle(items) {
-  return [...items].sort((a, b) =>
-    a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
-  );
+  return [...items].sort((a, b) => compareTitles(a.title, b.title));
 }
 
 function sortBooks(items) {
@@ -234,7 +239,7 @@ function sortBooks(items) {
     if (Boolean(a.locked) !== Boolean(b.locked)) {
       return a.locked ? 1 : -1;
     }
-    return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+    return compareTitles(a.title, b.title);
   });
 }
 
@@ -249,7 +254,7 @@ function sortExercises(items) {
   return [...items].sort((a, b) => {
     const rankDiff = exerciseSortRank(a.title) - exerciseSortRank(b.title);
     if (rankDiff !== 0) return rankDiff;
-    return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+    return compareTitles(a.title, b.title);
   });
 }
 

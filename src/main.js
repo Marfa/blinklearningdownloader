@@ -82,6 +82,13 @@ function createWindow() {
 
   mainWindow = new BrowserWindow(windowOptions);
 
+  // Hidden catalog BrowserWindow must be torn down with the UI, otherwise
+  // window-all-closed never fires and Electron stays resident after close.
+  mainWindow.on('closed', () => {
+    destroyCatalogWindow();
+    mainWindow = null;
+  });
+
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
 
@@ -114,7 +121,12 @@ app.whenReady().then(() => {
   createWindow();
 });
 
+app.on('before-quit', () => {
+  destroyCatalogWindow();
+});
+
 app.on('window-all-closed', () => {
+  destroyCatalogWindow();
   if (process.platform !== 'darwin') app.quit();
 });
 
