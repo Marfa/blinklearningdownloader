@@ -12,7 +12,6 @@ axios
     form.find('input').each((_, inp) => {
       const name = $(inp).attr('name');
       const type = $(inp).attr('type');
-      const val = $(inp).attr('value');
-      if (name) console.log(name, type, val?.slice?.(0, 120));
+      if (name) console.log(name, type || 'text');
     });
   });

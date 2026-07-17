@@ -13,7 +13,7 @@ Latest builds: [GitHub Releases](https://github.com/Marfa/blinklearningdownloade
 | Windows | `BlinkLearning-Downloader-Setup-1.1.8.exe` | NSIS installer |
 | Windows | `BlinkLearning-Downloader-1.1.8-win-x64-portable.exe` | Portable single `.exe` (no install) |
 | Windows | `BlinkLearning-Downloader-1.1.8-win-x64.zip` | ZIP of the unpacked app folder |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.8-mac-arm64.zip` | `.app` in a zip |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.1.9-mac-arm64.zip` | `.app` in a zip |
 
 > **Android:** no mobile build — Electron desktop only.
 
@@ -30,6 +30,10 @@ See [CHANGELOG.md](CHANGELOG.md).
 7. **Language** — RU/EN toggle, saved locally.
 8. **Updates** — notice when a newer release is available; the button asks “Update application?” and installs from [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases) if confirmed.
 9. **About** — version (with available update note) and source code link.
+
+### What’s new in 1.1.9
+
+- Security hardening: encrypted saved password, public-proxy warning, MP3 host allowlist, Electron sandbox.
 
 ### What’s new in 1.1.8
 

@@ -95,6 +95,14 @@ const messages = {
       'Сайт proxyscrape.com недоступен. Подбор попробует запасной список; если ошибка повторяется — введите прокси вручную.',
     'proxy.pickListEmpty':
       'Список SOCKS5 пуст или изменился формат сайта. Попробуйте позже или введите прокси вручную.',
+    'proxy.untrustedConfirmTitle': 'Недоверенный прокси',
+    'proxy.untrustedConfirmMessage':
+      'Этот SOCKS5 взят из публичного списка. Логин и пароль BlinkLearning будут видны оператору прокси. Продолжить вход?',
+    'proxy.untrustedConfirmOk': 'Продолжить',
+    'proxy.untrustedConfirmCancel': 'Отмена',
+    'proxy.untrustedCancelled': 'Вход через публичный прокси отменён.',
+    'proxy.untrustedNoRemember':
+      'Пароль не сохраняется при публичном прокси. Введите его при каждом входе.',
     'renderer.initError':
       'Не удалось подключить интерфейс к приложению. Полностью закройте программу и откройте снова.',
     'renderer.authFailed': 'Ошибка авторизации.',
@@ -136,6 +144,8 @@ const messages = {
     'auth.timeout': 'Таймаут или разрыв соединения: {detail}',
     'auth.proxyRejected': 'Прокси-сервер отклонил подключение (407).',
     'auth.unknown': 'Неизвестная ошибка авторизации.',
+    'auth.encryptionUnavailable':
+      'Система не позволяет безопасно сохранить пароль. Вход без «Запомнить» возможен.',
     'main.loginRequired': 'Сначала выполните вход.',
     'main.lessonRequired': 'Не указан ID урока.',
     'main.folderDialogTitle': 'Папка для сохранения аудио',
@@ -160,6 +170,7 @@ const messages = {
     'audio.discoverNone': 'Не найдено ни одного доступного аудиотрека (1–100).',
     'audio.resolveLink': 'Получение ссылки ({hop})…',
     'audio.mp3LinkFailed': 'Не удалось получить прямую ссылку на MP3.',
+    'audio.hostNotAllowed': 'Ссылка на аудио ведёт на недоверенный хост — загрузка отменена.',
     'audio.unknownError': 'Неизвестная ошибка',
     'audio.prematureClose':
       'Соединение закрылось до завершения загрузки. Повторите или проверьте прокси.',
@@ -281,6 +292,14 @@ const messages = {
       'The proxyscrape.com list is unavailable. A fallback list will be tried; if this persists, enter the proxy manually.',
     'proxy.pickListEmpty':
       'The SOCKS5 list is empty or the site layout changed. Try again later or enter the proxy manually.',
+    'proxy.untrustedConfirmTitle': 'Untrusted proxy',
+    'proxy.untrustedConfirmMessage':
+      'This SOCKS5 came from a public list. Your BlinkLearning login and password will be visible to the proxy operator. Continue signing in?',
+    'proxy.untrustedConfirmOk': 'Continue',
+    'proxy.untrustedConfirmCancel': 'Cancel',
+    'proxy.untrustedCancelled': 'Sign-in via public proxy was cancelled.',
+    'proxy.untrustedNoRemember':
+      'Password is not saved when using a public proxy. Enter it each time you sign in.',
     'renderer.initError':
       'Could not connect the UI to the app. Quit completely and open the app again.',
     'renderer.authFailed': 'Authentication failed.',
@@ -321,6 +340,8 @@ const messages = {
     'auth.timeout': 'Timeout or connection reset: {detail}',
     'auth.proxyRejected': 'Proxy server rejected the connection (407).',
     'auth.unknown': 'Unknown authentication error.',
+    'auth.encryptionUnavailable':
+      'This system cannot store the password securely. You can still sign in without Remember.',
     'main.loginRequired': 'Sign in first.',
     'main.lessonRequired': 'Lesson ID is not set.',
     'main.folderDialogTitle': 'Folder to save audio',
@@ -345,6 +366,7 @@ const messages = {
     'audio.discoverNone': 'No available audio tracks found (1–100).',
     'audio.resolveLink': 'Resolving URL ({hop})…',
     'audio.mp3LinkFailed': 'Could not get a direct MP3 link.',
+    'audio.hostNotAllowed': 'Audio URL points to an untrusted host — download cancelled.',
     'audio.unknownError': 'Unknown error',
     'audio.prematureClose':
       'Connection closed before download finished. Retry or check proxy settings.',

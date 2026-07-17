@@ -2,6 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const { socks5hAgentUrl } = require('./socks5-agent');
+const { isValidProxyHost, isValidProxyPort } = require('./proxy-host');
 const { CookieJar } = require('tough-cookie');
 const { HttpCookieAgent, HttpsCookieAgent } = require('http-cookie-agent/http');
 const { setAuthenticatedClient } = require('./session');
@@ -16,17 +17,22 @@ const SESSION_COOKIE = 'BLINKSESSIONPROD';
 
 function normalizeProxy(proxy) {
   if (!proxy?.enabled) {
-    return { enabled: false, host: '', port: 0 };
+    return { enabled: false, host: '', port: 0, untrustedPublic: false };
   }
 
   const host = String(proxy?.host ?? '').trim();
   const port = Number(proxy?.port);
 
-  if (!host || !Number.isFinite(port) || port < 1 || port > 65535) {
+  if (!isValidProxyHost(host) || !isValidProxyPort(port)) {
     throw new Error(t('auth.proxyInvalid', getLocale()));
   }
 
-  return { enabled: true, host, port };
+  return {
+    enabled: true,
+    host,
+    port,
+    untrustedPublic: Boolean(proxy?.untrustedPublic),
+  };
 }
 
 function createClient(proxy) {

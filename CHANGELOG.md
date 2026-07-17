@@ -2,6 +2,18 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
 
+## [1.1.9] — 2026-07-17
+
+### Безопасность
+
+- «Запомнить логин-пароль»: пароль шифруется через системное хранилище (macOS Keychain / Windows DPAPI), а не plaintext в `settings.json`; старые записи мигрируются при первом запуске.
+- Пароль больше не подставляется в поле ввода — при «Запомнить» подставляется только логин.
+- Публичный SOCKS5 из «Подобрать прокси»: предупреждение перед входом; пароль не сохраняется.
+- Загрузка MP3: редиректы и ссылки только на `*.blinklearning.com` и CDN `files-r2*`.
+- Electron: `sandbox: true`, ужесточён IPC (`settings:save`), убран `toMediaUrl` из preload.
+- Валидация host/port SOCKS5; CSP без `unsafe-inline` для стилей.
+- CI: `npm audit` и gitleaks на push/PR; pre-commit hook для секретов.
+
 ## [1.1.8] — 2026-07-16
 
 ### Исправлено

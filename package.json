@@ -1,6 +1,6 @@
 {
   "name": "blinklearningdownloader",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "BlinkLearning audio downloader for Windows and macOS",
   "main": "src/main.js",
   "scripts": {
@@ -14,7 +14,9 @@
     "dist:mac": "electron-builder --mac --arm64",
     "dist:all": "electron-builder --win --x64 --mac --arm64",
     "dist:temp": "electron-builder --win && node scripts/copy-installer-to-temp.js",
-    "sync:locale": "node scripts/sync-locale-data.js"
+    "sync:locale": "node scripts/sync-locale-data.js",
+    "audit": "npm audit --audit-level=critical",
+    "deps:outdated": "npx --yes npm-check-updates"
   },
   "author": "",
   "license": "CC-BY-NC-SA-4.0",
@@ -41,8 +43,18 @@
       "icon": "assets/icons/icon.png",
       "category": "public.app-category.education",
       "target": [
-        { "target": "zip", "arch": ["arm64"] },
-        { "target": "dir", "arch": ["arm64"] }
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
       ],
       "artifactName": "BlinkLearning-Downloader-${version}-mac-${arch}.${ext}"
     },
@@ -50,9 +62,24 @@
       "icon": "assets/icons/icon.ico",
       "artifactName": "BlinkLearning-Downloader-${version}-win-${arch}.${ext}",
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] },
-        { "target": "zip", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "signAndEditExecutable": false
     },

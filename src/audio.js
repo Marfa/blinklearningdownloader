@@ -4,6 +4,7 @@ const path = require('path');
 const cheerio = require('cheerio');
 const { createProxyDownloadClient } = require('./auth');
 const { t, getLocale, formatBytes } = require('./i18n');
+const { isAllowedDownloadUrl, isCdnHost } = require('./download-allowlist');
 
 const AUDIO_BASE_URL = 'https://www.blinklearning.com/useruploads/r/a';
 const { LAUNCH_BASE } = require('./blink-constants');
@@ -112,11 +113,20 @@ function extractMp3UrlsFromHtml(html, baseUrl) {
     }
   });
 
-  return [...urls];
+  return [...urls].filter((u) => isAllowedDownloadUrl(u));
+}
+
+function assertAllowedDownloadUrl(urlString, locale) {
+  if (!isAllowedDownloadUrl(urlString)) {
+    throw new Error(t('audio.hostNotAllowed', locale));
+  }
 }
 
 async function resolveDownloadUrl(client, startUrl, onProgress) {
   const locale = getLocale();
+  if (!isAllowedDownloadUrl(startUrl)) {
+    return { ok: false, message: t('audio.hostNotAllowed', locale) };
+  }
   let url = startUrl;
 
   for (let hop = 0; hop < MAX_REDIRECTS; hop += 1) {
@@ -139,7 +149,11 @@ async function resolveDownloadUrl(client, startUrl, onProgress) {
     });
 
     if (head.status >= 300 && head.status < 400 && head.headers.location) {
-      url = new URL(head.headers.location, url).href;
+      const next = new URL(head.headers.location, url).href;
+      if (!isAllowedDownloadUrl(next)) {
+        return { ok: false, message: t('audio.hostNotAllowed', locale) };
+      }
+      url = next;
       continue;
     }
 
@@ -162,7 +176,11 @@ async function resolveDownloadUrl(client, startUrl, onProgress) {
     });
 
     if (page.status >= 300 && page.status < 400 && page.headers.location) {
-      url = new URL(page.headers.location, url).href;
+      const next = new URL(page.headers.location, url).href;
+      if (!isAllowedDownloadUrl(next)) {
+        return { ok: false, message: t('audio.hostNotAllowed', locale) };
+      }
+      url = next;
       continue;
     }
 
@@ -187,15 +205,6 @@ async function resolveDownloadUrl(client, startUrl, onProgress) {
 function typeLooksLikeAudio(contentType) {
   const type = String(contentType || '').toLowerCase();
   return type.includes('audio') || type.includes('octet-stream');
-}
-
-function isCdnHost(url) {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    return host.includes('files-r2') || host.includes('r2.blinklearning');
-  } catch {
-    return false;
-  }
 }
 
 function pickDownloadClient(authClient, url, proxy, cdnClientCache) {
@@ -224,6 +233,7 @@ function formatDownloadError(err) {
 }
 
 async function downloadWithClient(authClient, url, destPath, onProgress, proxy) {
+  assertAllowedDownloadUrl(url, getLocale());
   const cdnClientCache = {};
   const client = pickDownloadClient(authClient, url, proxy, cdnClientCache);
 
@@ -405,7 +415,8 @@ function clearPreviewFiles(dir) {
 }
 
 async function prepareTrackPreview(client, lessonId, trackNumber, onProgress, proxy) {
-  const previewDir = getPreviewDir();
+  const { pathToFileURL } = require('url');
+  const previewDir = path.resolve(getPreviewDir());
   fs.mkdirSync(previewDir, { recursive: true });
   clearPreviewFiles(previewDir);
 
@@ -422,9 +433,15 @@ async function prepareTrackPreview(client, lessonId, trackNumber, onProgress, pr
     return result;
   }
 
+  const resolved = path.resolve(result.filePath);
+  const prefix = previewDir.endsWith(path.sep) ? previewDir : previewDir + path.sep;
+  if (resolved !== previewDir && !resolved.startsWith(prefix)) {
+    return { ok: false, message: t('main.previewError', getLocale()) };
+  }
+
   return {
     ok: true,
-    filePath: result.filePath,
+    mediaUrl: pathToFileURL(resolved).href,
     trackNumber: result.trackNumber,
     pista: result.pista,
   };
@@ -605,6 +622,7 @@ async function downloadDiscoveredTracks(
 
 module.exports = {
   AUDIO_BASE_URL,
+  isAllowedDownloadUrl: require('./download-allowlist').isAllowedDownloadUrl,
   LAUNCH_REFERER,
   buildAudioUrl,
   buildPistaNames,

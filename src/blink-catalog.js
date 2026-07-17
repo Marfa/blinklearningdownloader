@@ -1,6 +1,7 @@
 const { BrowserWindow, session } = require('electron');
 const { getHttpClient } = require('./session');
 const { readSettings } = require('./settings');
+const { isValidProxyHost, isValidProxyPort } = require('./proxy-host');
 const {
   LAUNCH_BASE,
   MYBOOKS_HASH,
@@ -25,7 +26,11 @@ function getAuthCookieJar() {
 }
 
 function catalogProxyKeyFromSettings(proxy) {
-  if (proxy?.enabled && proxy.host && proxy.port) {
+  if (
+    proxy?.enabled &&
+    isValidProxyHost(proxy.host) &&
+    isValidProxyPort(proxy.port)
+  ) {
     return `${proxy.host}:${proxy.port}`;
   }
   return 'direct';
@@ -36,7 +41,11 @@ async function applyCatalogSessionProxy(electronSession) {
   const proxy = settings.proxy;
   catalogProxyKey = catalogProxyKeyFromSettings(proxy);
 
-  if (proxy?.enabled && proxy.host && proxy.port) {
+  if (
+    proxy?.enabled &&
+    isValidProxyHost(proxy.host) &&
+    isValidProxyPort(proxy.port)
+  ) {
     await electronSession.setProxy({
       proxyRules: `socks5://${proxy.host}:${proxy.port}`,
       proxyBypassRules: '<local>',
@@ -175,6 +184,7 @@ async function ensureCatalogWindow() {
       partition: PARTITION,
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 

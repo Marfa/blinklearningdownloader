@@ -15,7 +15,13 @@ const ALLOWED_EXTERNAL_URLS = new Set([
 ]);
 const path = require('path');
 const { authenticate } = require('./auth');
-const { readSettings, saveSettings, clearAuthCredentials } = require('./settings');
+const {
+  readSettings,
+  saveSettings,
+  clearAuthCredentials,
+  getSettingsForRenderer,
+  resolveLoginPassword,
+} = require('./settings');
 const {
   setLessonInput,
   setExerciseSelection,
@@ -73,7 +79,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   };
 
@@ -134,12 +140,22 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-ipcMain.handle('settings:get', () => {
-  const { settings, fileExists } = readSettings();
-  return { settings, fileExists };
-});
+ipcMain.handle('settings:get', () => getSettingsForRenderer());
 
-ipcMain.handle('settings:save', (_event, partial) => saveSettings(partial));
+ipcMain.handle('settings:save', (_event, partial) => {
+  try {
+    return { ok: true, settings: saveSettings(partial) };
+  } catch (err) {
+    if (err?.code === 'ENCRYPTION_UNAVAILABLE' || err?.message === 'ENCRYPTION_UNAVAILABLE') {
+      return {
+        ok: false,
+        code: 'ENCRYPTION_UNAVAILABLE',
+        message: t('auth.encryptionUnavailable', getLocale()),
+      };
+    }
+    throw err;
+  }
+});
 
 ipcMain.handle('session:setLesson', (_event, rawInput) => {
   const result = setLessonInput(rawInput);
@@ -447,7 +463,7 @@ ipcMain.handle('proxy:pick', async () => {
       return { ok: false, message: t('proxy.pickFailed', locale) };
     }
 
-    return { ok: true, proxy };
+    return { ok: true, proxy: { ...proxy, untrustedPublic: true } };
   } catch (err) {
     const code = err.message;
     if (code === 'PROXY_LIST_BLOCKED') {
@@ -468,8 +484,32 @@ ipcMain.handle('proxy:pick', async () => {
 
 ipcMain.handle('auth:login', async (_event, payload) => {
   destroyCatalogWindow();
+  const locale = getLocale();
+
   try {
-    const result = await authenticate(payload);
+    const username = String(payload?.username ?? '').trim();
+    const proxy = payload?.proxy;
+    const password = resolveLoginPassword(username, payload?.password);
+
+    if (proxy?.enabled && proxy?.untrustedPublic) {
+      const { response } = await dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        buttons: [
+          t('proxy.untrustedConfirmOk', locale),
+          t('proxy.untrustedConfirmCancel', locale),
+        ],
+        defaultId: 1,
+        cancelId: 1,
+        noLink: true,
+        title: t('proxy.untrustedConfirmTitle', locale),
+        message: t('proxy.untrustedConfirmMessage', locale),
+      });
+      if (response !== 0) {
+        return { success: false, message: t('proxy.untrustedCancelled', locale) };
+      }
+    }
+
+    const result = await authenticate({ username, password, proxy });
     if (result?.success) {
       destroyCatalogWindow();
     }
@@ -477,7 +517,7 @@ ipcMain.handle('auth:login', async (_event, payload) => {
   } catch (err) {
     return {
       success: false,
-      message: err.message || t('auth.unknown', getLocale()),
+      message: err.message || t('auth.unknown', locale),
     };
   }
 });

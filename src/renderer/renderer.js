@@ -259,23 +259,30 @@ function onLangButtonClick() {
   persistLocale();
 }
 
+let proxyFromPublicList = false;
+
 function getProxyFromForm() {
   return {
     enabled: useProxy.checked,
     host: proxyHost.value.trim(),
     port: Number(proxyPort.value) || 0,
+    untrustedPublic: Boolean(useProxy.checked && proxyFromPublicList),
   };
 }
 
 async function saveProxySettings() {
   if (!window.blinkAuth?.saveSettings) return;
-  await window.blinkAuth.saveSettings({ proxy: getProxyFromForm() });
+  const result = await window.blinkAuth.saveSettings({ proxy: getProxyFromForm() });
+  if (result && result.ok === false && result.message) {
+    showStatus(result.message, 'error');
+  }
 }
 
 function applyProxyToForm(proxy) {
   useProxy.checked = Boolean(proxy?.enabled);
   proxyHost.value = proxy?.host || '';
   proxyPort.value = proxy?.enabled && proxy?.port ? String(proxy.port) : '';
+  proxyFromPublicList = Boolean(proxy?.enabled && proxy?.untrustedPublic);
   proxyFields.classList.toggle('hidden', !useProxy.checked);
   updateProxyAdBanner();
 }
@@ -798,14 +805,15 @@ async function goToAudioStep(exercise) {
 async function loadSavedSettings() {
   if (!window.blinkAuth?.getSettings) return;
 
-  const { settings, fileExists } = await window.blinkAuth.getSettings();
+  const { settings } = await window.blinkAuth.getSettings();
+  encryptionAvailable = settings.encryptionAvailable !== false;
   applyProxyToForm(settings.proxy);
 
-  rememberLogin.checked = Boolean(settings.rememberLogin);
-  if (settings.credentials) {
+  rememberLogin.checked = Boolean(settings.rememberLogin) && !settings.proxy?.untrustedPublic;
+  if (settings.credentials?.username) {
     document.getElementById('username').value = settings.credentials.username;
-    document.getElementById('password').value = settings.credentials.password;
   }
+  document.getElementById('password').value = '';
 
   if (settings.locale) {
     window.BlinkLocale?.setLocale(settings.locale);
@@ -816,10 +824,40 @@ async function loadSavedSettings() {
 async function saveAuthSettings(username, password) {
   if (!window.blinkAuth?.saveSettings) return;
 
-  await window.blinkAuth.saveSettings({
+  const proxy = getProxyFromForm();
+  if (proxy.untrustedPublic) {
+    rememberLogin.checked = false;
+    const result = await window.blinkAuth.saveSettings({
+      rememberLogin: false,
+      credentials: null,
+    });
+    if (result?.ok !== false) {
+      showStatus(tt('proxy.untrustedNoRemember'), 'info');
+    }
+    return;
+  }
+
+  if (rememberLogin.checked && settingsEncryptionUnavailable()) {
+    rememberLogin.checked = false;
+    showStatus(tt('auth.encryptionUnavailable'), 'error');
+    await window.blinkAuth.saveSettings({ rememberLogin: false, credentials: null });
+    return;
+  }
+
+  const result = await window.blinkAuth.saveSettings({
     rememberLogin: rememberLogin.checked,
     credentials: rememberLogin.checked ? { username, password } : null,
   });
+
+  if (result && result.ok === false) {
+    rememberLogin.checked = false;
+    showStatus(result.message || tt('auth.encryptionUnavailable'), 'error');
+  }
+}
+
+let encryptionAvailable = true;
+function settingsEncryptionUnavailable() {
+  return encryptionAvailable === false;
 }
 
 async function handleLogout() {
@@ -857,9 +895,17 @@ function closeHelpModal() {
 }
 
 function loadAppVersion() {
-  const version = window.blinkAuth?.getVersion?.();
-  helpVersion.textContent = version || '1.1.8';
-  updateHelpVersionLabel();
+  const apply = (version) => {
+    helpVersion.textContent = version || '1.1.9';
+    updateHelpVersionLabel();
+  };
+
+  const result = window.blinkAuth?.getVersion?.();
+  if (result && typeof result.then === 'function') {
+    result.then(apply).catch(() => apply(null));
+    return;
+  }
+  apply(result);
 }
 
 function updateHelpVersionLabel() {
@@ -1021,6 +1067,12 @@ if (proxyAdBanner) {
   });
 }
 
+proxyHost.addEventListener('input', () => {
+  proxyFromPublicList = false;
+});
+proxyPort.addEventListener('input', () => {
+  proxyFromPublicList = false;
+});
 proxyHost.addEventListener('change', saveProxySettings);
 proxyPort.addEventListener('change', saveProxySettings);
 
@@ -1078,12 +1130,14 @@ async function onPickProxyClick() {
     if (result?.ok && result.proxy) {
       proxyHost.value = result.proxy.host;
       proxyPort.value = String(result.proxy.port);
+      proxyFromPublicList = true;
+      rememberLogin.checked = false;
       await saveProxySettings();
       showStatus(
-        tt('proxy.pickStage.success', {
+        `${tt('proxy.pickStage.success', {
           host: result.proxy.host,
           port: result.proxy.port,
-        }),
+        })} ${tt('proxy.untrustedNoRemember')}`,
         'success'
       );
     } else {
@@ -1156,7 +1210,7 @@ previewAudioBtn.addEventListener('click', async () => {
       return;
     }
 
-    const mediaUrl = window.blinkAuth?.toMediaUrl?.(result.filePath);
+    const mediaUrl = result.mediaUrl;
     if (!mediaUrl) {
       showAudioStatus(tt('main.previewError'), 'error');
       return;
