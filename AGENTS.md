@@ -24,13 +24,16 @@ Do not commit credentials, tokens, `.env`, or real `settings.json` with password
 gitleaks detect --source .
 ```
 
-Install the shared pre-commit hook once per clone:
+Install shared git hooks once per clone:
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-The hook runs `gitleaks protect --staged` and blocks the commit if secrets are detected.
+- **pre-commit** — runs `gitleaks protect --staged` and blocks the commit if secrets are detected.
+- **post-commit** — runs `scripts/clean-stale-artifacts.sh` and deletes local build/debug artifacts older than 7 days (paths from `.gitignore`: `release-build/`, `dist/`, probe outputs, etc.; not `node_modules/` or `.node-local/`).
+
+Manual cleanup: `sh scripts/clean-stale-artifacts.sh`
 
 ## Security review
 
