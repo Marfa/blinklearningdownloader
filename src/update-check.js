@@ -98,6 +98,7 @@ if (require.main === module) {
   assert(!releaseHasPlatformAssets({ assets: [{ name: 'latest-mac.yml' }] }, 'win32'));
 
   const releases = [
+    { tag_name: 'v1.2.1', assets: [{ name: 'Setup.exe' }], draft: false, prerelease: false },
     { tag_name: 'v1.2.0', assets: [{ name: 'Setup.exe' }], draft: false, prerelease: false },
     {
       tag_name: 'v1.1.8',
@@ -107,7 +108,7 @@ if (require.main === module) {
     },
   ];
   assert(findLatestPlatformVersion(releases, 'darwin') === '1.1.8');
-  assert(findLatestPlatformVersion(releases, 'win32') === '1.2.0');
+  assert(findLatestPlatformVersion(releases, 'win32') === '1.2.1');
 
   console.log('update-check self-check ok');
 }

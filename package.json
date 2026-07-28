@@ -1,6 +1,6 @@
 {
   "name": "blinklearningdownloader",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "BlinkLearning audio downloader for Windows and macOS",
   "main": "src/main.js",
   "scripts": {

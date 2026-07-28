@@ -18,6 +18,7 @@ const MIN_MP3_BYTES = 50 * 1024;
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+
 function emitDownloadProgress(onProgress, received, total) {
   const locale = getLocale();
   const payload = {
@@ -42,28 +43,53 @@ function emitDownloadProgress(onProgress, received, total) {
 
 function extractAudioInfoFromText(text, activityId) {
   const source = String(text || '');
-  const id = String(activityId || '');
-  if (!source || !id) {
-    return { pistaManifest: {}, audioSuffix: null };
+  if (!source) {
+    return { pistaManifest: {}, audioSuffix: null, audioUploadId: null };
   }
 
-  const pistaManifest = {};
-  const fileRe = new RegExp(`/useruploads/r/a/${id}/(PISTA[^"'\\s<>]+)\\.mp3`, 'gi');
+  const byUploadId = {};
+  const fileRe = /\/useruploads\/r\/a\/(\d+)\/(PISTA[^"'\\s<>]+)\.mp3/gi;
   for (const match of source.matchAll(fileRe)) {
-    const name = match[1];
+    const uploadId = match[1];
+    const name = match[2];
+    if (!byUploadId[uploadId]) byUploadId[uploadId] = {};
     const trackMatch = name.match(/^PISTA0*(\d+)/i);
     if (trackMatch) {
-      pistaManifest[Number(trackMatch[1])] = name;
+      byUploadId[uploadId][Number(trackMatch[1])] = name;
     }
   }
 
-  const suffixMatch = source.match(
-    new RegExp(`/useruploads/r/a/${id}/PISTA\\d+_(\\d+)\\.mp3`, 'i')
-  );
+  const preferredId = String(activityId || '');
+  let uploadId = preferredId;
+  let pistaManifest = preferredId ? byUploadId[preferredId] || {} : {};
+
+  if (Object.keys(pistaManifest).length === 0) {
+    const ranked = Object.entries(byUploadId).sort(
+      (a, b) => Object.keys(b[1]).length - Object.keys(a[1]).length
+    );
+    if (ranked.length > 0) {
+      uploadId = ranked[0][0];
+      pistaManifest = ranked[0][1];
+    }
+  }
+
+  if (Object.keys(pistaManifest).length === 0) {
+    return { pistaManifest: {}, audioSuffix: null, audioUploadId: null };
+  }
+
+  let audioSuffix = null;
+  for (const name of Object.values(pistaManifest)) {
+    const suffixMatch = String(name).match(/^PISTA\d+_(\d+)$/i);
+    if (suffixMatch) {
+      audioSuffix = suffixMatch[1];
+      break;
+    }
+  }
 
   return {
     pistaManifest,
-    audioSuffix: suffixMatch ? suffixMatch[1] : null,
+    audioSuffix,
+    audioUploadId: uploadId,
   };
 }
 
@@ -331,6 +357,8 @@ async function downloadResolvedFile(authClient, resolveUrl, destPath, onProgress
 
   for (let attempt = 1; attempt <= DOWNLOAD_RETRIES; attempt += 1) {
     try {
+      if (attempt > 1) {
+      }
       onProgress?.({
         phase: 'download',
         message: t('audio.downloadRetry', locale, {
@@ -372,8 +400,9 @@ async function downloadOneTrack(
   fs.mkdirSync(destDir, { recursive: true });
   const tried = [];
   let lastError = null;
+  const pistaCandidates = buildPistaNames(trackNumber, pistaOptions);
 
-  for (const pista of buildPistaNames(trackNumber, pistaOptions)) {
+  for (const pista of pistaCandidates) {
     const entryUrl = buildAudioUrl(lessonId, pista);
     tried.push(entryUrl);
 
@@ -386,7 +415,9 @@ async function downloadOneTrack(
 
     try {
       const resolved = await resolveDownloadUrl(client, entryUrl, onProgress);
-      if (!resolved.ok) continue;
+      if (!resolved.ok) {
+        continue;
+      }
 
       const filePath = path.join(destDir, `${pista}.mp3`);
       await downloadResolvedFile(
@@ -577,6 +608,7 @@ async function downloadTracks(
     }).trim();
   }
 
+
   return {
     ok: downloaded > 0,
     downloaded,
@@ -720,6 +752,14 @@ if (require.main === module) {
   );
   assert(info.pistaManifest[30] === 'PISTA30_753257');
   assert(info.audioSuffix === '753257');
+  assert(info.audioUploadId === '412686818');
+
+  const libro = extractAudioInfoFromText(
+    '<audio src="/useruploads/r/a/412686818/PISTA30_753257.mp3"></audio>',
+    '412686810'
+  );
+  assert(libro.pistaManifest[30] === 'PISTA30_753257');
+  assert(libro.audioUploadId === '412686818');
 
   console.log('audio self-check ok');
 }

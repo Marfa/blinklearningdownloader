@@ -132,24 +132,30 @@ function buildPistaOptions(session) {
   };
 }
 
-function hasPistaHints(session) {
-  return Boolean(
-    session.audioSuffix ||
-      (session.pistaManifest && Object.keys(session.pistaManifest).length > 0)
-  );
+function getAudioLessonId(session) {
+  return session.audioUploadId || session.lessonId;
 }
 
 async function ensureAudioPistaOptions() {
   const session = getSession();
   const base = buildPistaOptions(session);
-  if (hasPistaHints(session)) return base;
+  const hasManifest =
+    session.pistaManifest && Object.keys(session.pistaManifest).length > 0;
+
+  if (session.audioUploadId && (hasManifest || session.audioSuffix)) {
+    return base;
+  }
 
   const ref = parseExerciseRef(session.exerciseUrl);
   if (!ref) return base;
 
   try {
     const discovered = await discoverPistaManifestFromExercise(ref.bookId, ref.activityId);
-    if (discovered.audioSuffix || Object.keys(discovered.pistaManifest || {}).length > 0) {
+    if (
+      discovered.audioSuffix ||
+      discovered.audioUploadId ||
+      Object.keys(discovered.pistaManifest || {}).length > 0
+    ) {
       setAudioPistaInfo(discovered);
       return buildPistaOptions(getSession());
     }
@@ -336,9 +342,10 @@ ipcMain.handle('audio:downloadAuto', async () => {
   try {
     const { settings } = readSettings();
     const pistaOptions = await ensureAudioPistaOptions();
+    const audioLessonId = getAudioLessonId(getSession());
     const result = await downloadDiscoveredTracks(
       client,
-      lessonId,
+      audioLessonId,
       destDir,
       (progress) => sendDownloadProgress(progress),
       settings.proxy,
@@ -395,9 +402,10 @@ ipcMain.handle('audio:download', async (_event, options) => {
   try {
     const { settings } = readSettings();
     const pistaOptions = await ensureAudioPistaOptions();
+    const audioLessonId = getAudioLessonId(getSession());
     const result = await downloadTracks(
       client,
-      lessonId,
+      audioLessonId,
       tracksResult.tracks,
       destDir,
       (progress) => sendDownloadProgress(progress),
@@ -434,9 +442,10 @@ ipcMain.handle('audio:preview', async (_event, { trackNumber }) => {
 
   try {
     const pistaOptions = await ensureAudioPistaOptions();
+    const audioLessonId = getAudioLessonId(getSession());
     const result = await prepareTrackPreview(
       client,
-      lessonId,
+      audioLessonId,
       track,
       (progress) => sendDownloadProgress({ ...progress, preview: true }),
       settings.proxy,

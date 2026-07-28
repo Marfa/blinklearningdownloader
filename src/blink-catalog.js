@@ -386,6 +386,7 @@ function collectActivitiesFromNode(node, bucket, seen) {
         isAudio: typeLabel === 1 || typeLabel === '1' || /audio/i.test(String(item.title || '')),
         pistaManifest: audioInfo.pistaManifest,
         audioSuffix: audioInfo.audioSuffix,
+        audioUploadId: audioInfo.audioUploadId,
       });
     }
   }
@@ -465,6 +466,7 @@ async function listExercises(bookId, chapterId) {
         lessonId: String(item.id),
         pistaManifest: item.pistaManifest || {},
         audioSuffix: item.audioSuffix || null,
+        audioUploadId: item.audioUploadId || null,
       }))
     )
   );
@@ -474,7 +476,7 @@ async function scrapeExercisePistaManifest(activityId) {
   return runScript(
     `(() => {
       const activityId = ${JSON.stringify(String(activityId))};
-      const re = new RegExp('/useruploads/r/a/' + activityId + '/(PISTA[^"\\'\\\\s<>]+)\\\\.mp3', 'gi');
+      const re = /\\/useruploads\\/r\\/a\\/(\\d+)\\/(PISTA[^"'\\'\\\\s<>]+)\\.mp3/gi;
       const sources = [document.documentElement.innerHTML];
       for (const frame of document.querySelectorAll('iframe')) {
         try {
@@ -483,18 +485,46 @@ async function scrapeExercisePistaManifest(activityId) {
           }
         } catch (_) {}
       }
-      let combined = sources.join('\\n');
+      for (const el of document.querySelectorAll('audio[src], source[src]')) {
+        const src = el.getAttribute('src');
+        if (src) sources.push(src);
+      }
+      for (const el of document.querySelectorAll('[data-setup]')) {
+        const raw = el.getAttribute('data-setup') || '';
+        sources.push(raw);
+        try {
+          sources.push(JSON.stringify(JSON.parse(raw)));
+        } catch (_) {}
+        try {
+          sources.push(raw.replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
+        } catch (_) {}
+      }
       try {
-        combined += '\\n' + JSON.stringify(window.blink || {});
+        sources.push(JSON.stringify(window.blink || {}));
       } catch (_) {}
-      const map = {};
+      const combined = sources.join('\\n');
+      const byUpload = {};
       let match;
       while ((match = re.exec(combined)) !== null) {
-        const name = match[1];
+        const uploadId = match[1];
+        const name = match[2];
         const track = name.match(/^PISTA0*(\\d+)/i)?.[1];
-        if (track) map[track] = name;
+        if (!track) continue;
+        if (!byUpload[uploadId]) byUpload[uploadId] = {};
+        byUpload[uploadId][track] = name;
       }
-      return map;
+      let uploadId = activityId;
+      let manifest = byUpload[activityId] || {};
+      if (Object.keys(manifest).length === 0) {
+        const ranked = Object.entries(byUpload).sort(
+          (a, b) => Object.keys(b[1]).length - Object.keys(a[1]).length
+        );
+        if (ranked.length > 0) {
+          uploadId = ranked[0][0];
+          manifest = ranked[0][1];
+        }
+      }
+      return { uploadId, manifest };
     })()`,
     SCRIPT_TIMEOUT_MS
   );
@@ -507,20 +537,22 @@ async function discoverPistaManifestFromExercise(bookId, activityId) {
     10000
   );
 
+  let uploadId = String(activityId);
   let merged = {};
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const found = await scrapeExercisePistaManifest(activityId);
-    if (found && typeof found === 'object') {
-      merged = { ...merged, ...found };
+    if (found?.uploadId) uploadId = String(found.uploadId);
+    if (found?.manifest && typeof found.manifest === 'object') {
+      merged = { ...merged, ...found.manifest };
     }
     if (Object.keys(merged).length > 0) break;
     await delay(1000);
   }
 
   const manifestText = Object.values(merged)
-    .map((name) => `/useruploads/r/a/${activityId}/${name}.mp3`)
+    .map((name) => `/useruploads/r/a/${uploadId}/${name}.mp3`)
     .join('\n');
-  return extractAudioInfoFromText(manifestText, activityId);
+  return extractAudioInfoFromText(manifestText, uploadId);
 }
 
 module.exports = {

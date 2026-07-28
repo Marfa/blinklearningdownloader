@@ -16,6 +16,12 @@ assert.strictEqual(
   true
 );
 assert.strictEqual(isAllowedDownloadUrl('https://files-r2.example.com/a.mp3'), true);
+assert.strictEqual(
+  isAllowedDownloadUrl(
+    'https://blinklearning1-files-r2.blinklearning.net/28/bc/28bc2f2d819562c452bd1d240f12e2e795252d7c_6438711.mp3'
+  ),
+  true
+);
 assert.strictEqual(isAllowedDownloadUrl('https://evil.example/a.mp3'), false);
 assert.strictEqual(isAllowedDownloadUrl('javascript:alert(1)'), false);
 

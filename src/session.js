@@ -10,6 +10,7 @@ const session = {
   chapterTitle: null,
   pistaManifest: null,
   audioSuffix: null,
+  audioUploadId: null,
   httpClient: null,
 };
 
@@ -44,6 +45,7 @@ function setExerciseSelection({
   chapterTitle,
   pistaManifest,
   audioSuffix,
+  audioUploadId,
 }) {
   if (!lessonId) {
     return { ok: false, message: t('session.exerciseRequired', getLocale()) };
@@ -57,6 +59,7 @@ function setExerciseSelection({
   session.chapterTitle = chapterTitle || null;
   session.pistaManifest = pistaManifest || null;
   session.audioSuffix = audioSuffix || null;
+  session.audioUploadId = audioUploadId ? String(audioUploadId) : null;
 
   return {
     ok: true,
@@ -66,12 +69,15 @@ function setExerciseSelection({
   };
 }
 
-function setAudioPistaInfo({ pistaManifest, audioSuffix }) {
+function setAudioPistaInfo({ pistaManifest, audioSuffix, audioUploadId }) {
   if (pistaManifest && typeof pistaManifest === 'object') {
     session.pistaManifest = pistaManifest;
   }
   if (audioSuffix) {
     session.audioSuffix = audioSuffix;
+  }
+  if (audioUploadId) {
+    session.audioUploadId = String(audioUploadId);
   }
 }
 
@@ -85,6 +91,7 @@ function getSession() {
     chapterTitle: session.chapterTitle,
     pistaManifest: session.pistaManifest,
     audioSuffix: session.audioSuffix,
+    audioUploadId: session.audioUploadId,
     authenticated: Boolean(session.httpClient),
   };
 }
@@ -98,6 +105,7 @@ function clearSession() {
   session.chapterTitle = null;
   session.pistaManifest = null;
   session.audioSuffix = null;
+  session.audioUploadId = null;
   session.httpClient = null;
 }
 
