@@ -86,6 +86,8 @@ async function persistExerciseSelection(exercise) {
     exerciseTitle: exercise.title,
     bookTitle: catalogState.bookTitle,
     chapterTitle: catalogState.chapterTitle,
+    pistaManifest: exercise.pistaManifest || null,
+    audioSuffix: exercise.audioSuffix || null,
   });
 }
 
@@ -896,7 +898,7 @@ function closeHelpModal() {
 
 function loadAppVersion() {
   const apply = (version) => {
-    helpVersion.textContent = version || '1.1.9';
+    helpVersion.textContent = version || '1.2.0';
     updateHelpVersionLabel();
   };
 

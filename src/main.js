@@ -25,6 +25,7 @@ const {
 const {
   setLessonInput,
   setExerciseSelection,
+  setAudioPistaInfo,
   getSession,
   clearSession,
   getHttpClient,
@@ -39,15 +40,18 @@ const {
   listBooks,
   listChapters,
   listExercises,
+  discoverPistaManifestFromExercise,
   destroyCatalogWindow,
 } = require('./blink-catalog');
 const { t, getLocale } = require('./i18n');
 const { getAppVersion } = require('./version');
+const { parseExerciseRef } = require('./lesson');
 const { checkForUpdate } = require('./update-check');
 const { pickWorkingSocks5Proxy } = require('./proxy-picker');
 const {
   initAutoUpdater,
   setUpdateProgressHandler,
+  setBeforeInstallHook,
   downloadAndInstall,
 } = require('./auto-update');
 
@@ -121,9 +125,45 @@ function getDefaultDownloadDir() {
   return settings.lastDownloadDir || app.getPath('downloads');
 }
 
+function buildPistaOptions(session) {
+  return {
+    pistaManifest: session.pistaManifest || {},
+    audioSuffix: session.audioSuffix || null,
+  };
+}
+
+function hasPistaHints(session) {
+  return Boolean(
+    session.audioSuffix ||
+      (session.pistaManifest && Object.keys(session.pistaManifest).length > 0)
+  );
+}
+
+async function ensureAudioPistaOptions() {
+  const session = getSession();
+  const base = buildPistaOptions(session);
+  if (hasPistaHints(session)) return base;
+
+  const ref = parseExerciseRef(session.exerciseUrl);
+  if (!ref) return base;
+
+  try {
+    const discovered = await discoverPistaManifestFromExercise(ref.bookId, ref.activityId);
+    if (discovered.audioSuffix || Object.keys(discovered.pistaManifest || {}).length > 0) {
+      setAudioPistaInfo(discovered);
+      return buildPistaOptions(getSession());
+    }
+  } catch {
+    /* fall back to default pista names */
+  }
+
+  return base;
+}
+
 app.whenReady().then(() => {
   initAutoUpdater();
   setUpdateProgressHandler(sendUpdateProgress);
+  setBeforeInstallHook(() => destroyCatalogWindow());
   createWindow();
 });
 
@@ -137,6 +177,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
+  if (app.isQuitting) return;
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
@@ -294,13 +335,15 @@ ipcMain.handle('audio:downloadAuto', async () => {
 
   try {
     const { settings } = readSettings();
+    const pistaOptions = await ensureAudioPistaOptions();
     const result = await downloadDiscoveredTracks(
       client,
       lessonId,
       destDir,
       (progress) => sendDownloadProgress(progress),
       settings.proxy,
-      100
+      100,
+      pistaOptions
     );
     return { ...result, destDir };
   } catch (err) {
@@ -351,13 +394,15 @@ ipcMain.handle('audio:download', async (_event, options) => {
 
   try {
     const { settings } = readSettings();
+    const pistaOptions = await ensureAudioPistaOptions();
     const result = await downloadTracks(
       client,
       lessonId,
       tracksResult.tracks,
       destDir,
       (progress) => sendDownloadProgress(progress),
-      settings.proxy
+      settings.proxy,
+      pistaOptions
     );
 
     return { ...result, destDir };
@@ -388,12 +433,14 @@ ipcMain.handle('audio:preview', async (_event, { trackNumber }) => {
   const { settings } = readSettings();
 
   try {
+    const pistaOptions = await ensureAudioPistaOptions();
     const result = await prepareTrackPreview(
       client,
       lessonId,
       track,
       (progress) => sendDownloadProgress({ ...progress, preview: true }),
-      settings.proxy
+      settings.proxy,
+      pistaOptions
     );
     return result;
   } catch (err) {

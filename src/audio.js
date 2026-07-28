@@ -40,15 +40,52 @@ function emitDownloadProgress(onProgress, received, total) {
   onProgress?.(payload);
 }
 
-function buildPistaNames(trackNumber) {
+function extractAudioInfoFromText(text, activityId) {
+  const source = String(text || '');
+  const id = String(activityId || '');
+  if (!source || !id) {
+    return { pistaManifest: {}, audioSuffix: null };
+  }
+
+  const pistaManifest = {};
+  const fileRe = new RegExp(`/useruploads/r/a/${id}/(PISTA[^"'\\s<>]+)\\.mp3`, 'gi');
+  for (const match of source.matchAll(fileRe)) {
+    const name = match[1];
+    const trackMatch = name.match(/^PISTA0*(\d+)/i);
+    if (trackMatch) {
+      pistaManifest[Number(trackMatch[1])] = name;
+    }
+  }
+
+  const suffixMatch = source.match(
+    new RegExp(`/useruploads/r/a/${id}/PISTA\\d+_(\\d+)\\.mp3`, 'i')
+  );
+
+  return {
+    pistaManifest,
+    audioSuffix: suffixMatch ? suffixMatch[1] : null,
+  };
+}
+
+function buildPistaNames(trackNumber, pistaOptions = {}) {
   const n = Number(trackNumber);
   if (!Number.isFinite(n) || n < 0) return [];
 
   const names = [];
+  const manifestName = pistaOptions.pistaManifest?.[n];
+  if (manifestName) names.push(manifestName);
+
   if (n < 10) names.push(`PISTA0${n}`);
   if (n < 100) names.push(`PISTA${String(n).padStart(2, '0')}`);
   names.push(`PISTA${String(n).padStart(3, '0')}`);
   names.push(`PISTA${n}`);
+
+  const audioSuffix = pistaOptions.audioSuffix;
+  if (audioSuffix) {
+    for (const base of [...names]) {
+      if (!base.includes('_')) names.push(`${base}_${audioSuffix}`);
+    }
+  }
 
   return [...new Set(names)];
 }
@@ -322,13 +359,21 @@ async function downloadResolvedFile(authClient, resolveUrl, destPath, onProgress
   throw new Error(formatDownloadError(lastError));
 }
 
-async function downloadOneTrack(client, lessonId, trackNumber, destDir, onProgress, proxy) {
+async function downloadOneTrack(
+  client,
+  lessonId,
+  trackNumber,
+  destDir,
+  onProgress,
+  proxy,
+  pistaOptions = {}
+) {
   const locale = getLocale();
   fs.mkdirSync(destDir, { recursive: true });
   const tried = [];
   let lastError = null;
 
-  for (const pista of buildPistaNames(trackNumber)) {
+  for (const pista of buildPistaNames(trackNumber, pistaOptions)) {
     const entryUrl = buildAudioUrl(lessonId, pista);
     tried.push(entryUrl);
 
@@ -414,7 +459,14 @@ function clearPreviewFiles(dir) {
   }
 }
 
-async function prepareTrackPreview(client, lessonId, trackNumber, onProgress, proxy) {
+async function prepareTrackPreview(
+  client,
+  lessonId,
+  trackNumber,
+  onProgress,
+  proxy,
+  pistaOptions = {}
+) {
   const { pathToFileURL } = require('url');
   const previewDir = path.resolve(getPreviewDir());
   fs.mkdirSync(previewDir, { recursive: true });
@@ -426,7 +478,8 @@ async function prepareTrackPreview(client, lessonId, trackNumber, onProgress, pr
     trackNumber,
     previewDir,
     onProgress,
-    proxy
+    proxy,
+    pistaOptions
   );
 
   if (!result.ok) {
@@ -447,7 +500,15 @@ async function prepareTrackPreview(client, lessonId, trackNumber, onProgress, pr
   };
 }
 
-async function downloadTracks(client, lessonId, tracks, destDir, onProgress, proxy) {
+async function downloadTracks(
+  client,
+  lessonId,
+  tracks,
+  destDir,
+  onProgress,
+  proxy,
+  pistaOptions = {}
+) {
   const locale = getLocale();
   fs.mkdirSync(destDir, { recursive: true });
   const results = [];
@@ -479,7 +540,8 @@ async function downloadTracks(client, lessonId, tracks, destDir, onProgress, pro
           ...payload,
         });
       },
-      proxy
+      proxy,
+      pistaOptions
     );
 
     results.push(result);
@@ -527,8 +589,8 @@ async function downloadTracks(client, lessonId, tracks, destDir, onProgress, pro
   };
 }
 
-async function probeTrackAvailable(client, lessonId, trackNumber) {
-  for (const pista of buildPistaNames(trackNumber)) {
+async function probeTrackAvailable(client, lessonId, trackNumber, pistaOptions = {}) {
+  for (const pista of buildPistaNames(trackNumber, pistaOptions)) {
     const entryUrl = buildAudioUrl(lessonId, pista);
     const resolved = await resolveDownloadUrl(client, entryUrl, null);
     if (resolved.ok) return true;
@@ -542,7 +604,8 @@ async function downloadDiscoveredTracks(
   destDir,
   onProgress,
   proxy,
-  maxTrack = 100
+  maxTrack = 100,
+  pistaOptions = {}
 ) {
   const locale = getLocale();
   const results = [];
@@ -580,7 +643,8 @@ async function downloadDiscoveredTracks(
         }
         onProgress?.({ ...payload, trackNumber, total: maxTrack });
       },
-      proxy
+      proxy,
+      pistaOptions
     );
 
     if (result.ok) {
@@ -626,6 +690,7 @@ module.exports = {
   LAUNCH_REFERER,
   buildAudioUrl,
   buildPistaNames,
+  extractAudioInfoFromText,
   resolveTrackNumbers,
   resolveDownloadUrl,
   downloadOneTrack,
@@ -634,3 +699,27 @@ module.exports = {
   probeTrackAvailable,
   prepareTrackPreview,
 };
+
+if (require.main === module) {
+  const assert = (cond, msg) => {
+    if (!cond) throw new Error(msg);
+  };
+
+  const names = buildPistaNames(30, { audioSuffix: '753257' });
+  assert(names.includes('PISTA30_753257'));
+  assert(names.includes('PISTA30'));
+
+  const manifest = buildPistaNames(30, {
+    pistaManifest: { 30: 'PISTA30_753257' },
+  });
+  assert(manifest[0] === 'PISTA30_753257');
+
+  const info = extractAudioInfoFromText(
+    '/useruploads/r/a/412686818/PISTA30_753257.mp3',
+    '412686818'
+  );
+  assert(info.pistaManifest[30] === 'PISTA30_753257');
+  assert(info.audioSuffix === '753257');
+
+  console.log('audio self-check ok');
+}

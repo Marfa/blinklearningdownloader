@@ -1,18 +1,45 @@
-const { app } = require('electron');
+const { app, autoUpdater: nativeAutoUpdater, BrowserWindow } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.autoRunAppAfterInstall = true;
 
+const MAC_INSTALL_DELAY_MS = 5000;
+
 let progressHandler = null;
+let beforeInstallHook = null;
 
 function setUpdateProgressHandler(handler) {
   progressHandler = handler;
 }
 
+function setBeforeInstallHook(hook) {
+  beforeInstallHook = hook;
+}
+
 function notifyProgress(phase, extra = {}) {
   progressHandler?.({ phase, ...extra });
+}
+
+function prepareForInstall() {
+  app.isQuitting = true;
+  beforeInstallHook?.();
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win.isDestroyed()) continue;
+    win.removeAllListeners('close');
+    win.close();
+  }
+}
+
+function scheduleInstall() {
+  const run = () => {
+    prepareForInstall();
+    autoUpdater.quitAndInstall(false, true);
+  };
+
+  const delay = process.platform === 'darwin' ? MAC_INSTALL_DELAY_MS : 400;
+  setTimeout(run, delay).unref?.();
 }
 
 function initAutoUpdater() {
@@ -53,8 +80,12 @@ function downloadAndInstall() {
 
     const onDownloaded = () => {
       notifyProgress('installing');
+      if (process.platform === 'darwin') {
+        // Squirrel.Mac fetches the zip from electron-updater's local proxy; start early.
+        nativeAutoUpdater.checkForUpdates();
+      }
       finish({ ok: true, installing: true });
-      setTimeout(() => autoUpdater.quitAndInstall(false, true), 400);
+      scheduleInstall();
     };
 
     const cleanup = () => {
@@ -79,5 +110,6 @@ function downloadAndInstall() {
 module.exports = {
   initAutoUpdater,
   setUpdateProgressHandler,
+  setBeforeInstallHook,
   downloadAndInstall,
 };

@@ -1,3 +1,12 @@
+function parseExerciseRef(exerciseUrl) {
+  const text = String(exerciseUrl || '');
+  const match =
+    text.match(/#responsive\/book\/(\d+)\/(\d+)/i) ||
+    text.match(/book\/(\d+)\/(\d+)/i);
+  if (!match) return null;
+  return { bookId: match[1], activityId: match[2] };
+}
+
 function parseLessonIdOrUrl(input) {
   const trimmed = String(input ?? '').trim();
   if (!trimmed) return null;
@@ -22,4 +31,4 @@ function parseLessonIdOrUrl(input) {
   return trailingDigits || null;
 }
 
-module.exports = { parseLessonIdOrUrl };
+module.exports = { parseLessonIdOrUrl, parseExerciseRef };

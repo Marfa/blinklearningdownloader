@@ -8,6 +8,8 @@ const session = {
   exerciseTitle: null,
   bookTitle: null,
   chapterTitle: null,
+  pistaManifest: null,
+  audioSuffix: null,
   httpClient: null,
 };
 
@@ -40,6 +42,8 @@ function setExerciseSelection({
   exerciseTitle,
   bookTitle,
   chapterTitle,
+  pistaManifest,
+  audioSuffix,
 }) {
   if (!lessonId) {
     return { ok: false, message: t('session.exerciseRequired', getLocale()) };
@@ -51,6 +55,8 @@ function setExerciseSelection({
   session.exerciseTitle = exerciseTitle || null;
   session.bookTitle = bookTitle || null;
   session.chapterTitle = chapterTitle || null;
+  session.pistaManifest = pistaManifest || null;
+  session.audioSuffix = audioSuffix || null;
 
   return {
     ok: true,
@@ -58,6 +64,15 @@ function setExerciseSelection({
     exerciseUrl: session.exerciseUrl,
     exerciseTitle: session.exerciseTitle,
   };
+}
+
+function setAudioPistaInfo({ pistaManifest, audioSuffix }) {
+  if (pistaManifest && typeof pistaManifest === 'object') {
+    session.pistaManifest = pistaManifest;
+  }
+  if (audioSuffix) {
+    session.audioSuffix = audioSuffix;
+  }
 }
 
 function getSession() {
@@ -68,6 +83,8 @@ function getSession() {
     exerciseTitle: session.exerciseTitle,
     bookTitle: session.bookTitle,
     chapterTitle: session.chapterTitle,
+    pistaManifest: session.pistaManifest,
+    audioSuffix: session.audioSuffix,
     authenticated: Boolean(session.httpClient),
   };
 }
@@ -79,6 +96,8 @@ function clearSession() {
   session.exerciseTitle = null;
   session.bookTitle = null;
   session.chapterTitle = null;
+  session.pistaManifest = null;
+  session.audioSuffix = null;
   session.httpClient = null;
 }
 
@@ -87,6 +106,7 @@ module.exports = {
   getHttpClient,
   setLessonInput,
   setExerciseSelection,
+  setAudioPistaInfo,
   getSession,
   clearSession,
 };

@@ -9,6 +9,7 @@ const {
   buildBookHash,
   buildExerciseUrl,
 } = require('./blink-constants');
+const { extractAudioInfoFromText } = require('./audio');
 
 const PARTITION = 'persist:blink-catalog';
 const PAGE_READY_TIMEOUT_MS = 90000;
@@ -377,11 +378,14 @@ function collectActivitiesFromNode(node, bucket, seen) {
         `Упражнение ${sid}`
       );
       if (isNavigationCatalogTitle(title)) continue;
+      const audioInfo = extractAudioInfoFromText(JSON.stringify(item), sid);
       bucket.push({
         id: sid,
         title,
         type: typeLabel,
         isAudio: typeLabel === 1 || typeLabel === '1' || /audio/i.test(String(item.title || '')),
+        pistaManifest: audioInfo.pistaManifest,
+        audioSuffix: audioInfo.audioSuffix,
       });
     }
   }
@@ -459,15 +463,71 @@ async function listExercises(bookId, chapterId) {
         ...item,
         url: buildExerciseUrl(bookId, item.id),
         lessonId: String(item.id),
+        pistaManifest: item.pistaManifest || {},
+        audioSuffix: item.audioSuffix || null,
       }))
     )
   );
+}
+
+async function scrapeExercisePistaManifest(activityId) {
+  return runScript(
+    `(() => {
+      const activityId = ${JSON.stringify(String(activityId))};
+      const re = new RegExp('/useruploads/r/a/' + activityId + '/(PISTA[^"\\'\\\\s<>]+)\\\\.mp3', 'gi');
+      const sources = [document.documentElement.innerHTML];
+      for (const frame of document.querySelectorAll('iframe')) {
+        try {
+          if (frame.contentDocument?.documentElement) {
+            sources.push(frame.contentDocument.documentElement.innerHTML);
+          }
+        } catch (_) {}
+      }
+      let combined = sources.join('\\n');
+      try {
+        combined += '\\n' + JSON.stringify(window.blink || {});
+      } catch (_) {}
+      const map = {};
+      let match;
+      while ((match = re.exec(combined)) !== null) {
+        const name = match[1];
+        const track = name.match(/^PISTA0*(\\d+)/i)?.[1];
+        if (track) map[track] = name;
+      }
+      return map;
+    })()`,
+    SCRIPT_TIMEOUT_MS
+  );
+}
+
+async function discoverPistaManifestFromExercise(bookId, activityId) {
+  await ensureCatalogWindow();
+  await runScript(
+    `(() => { location.hash = ${JSON.stringify(`#responsive/book/${bookId}/${activityId}`)}; })()`,
+    10000
+  );
+
+  let merged = {};
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const found = await scrapeExercisePistaManifest(activityId);
+    if (found && typeof found === 'object') {
+      merged = { ...merged, ...found };
+    }
+    if (Object.keys(merged).length > 0) break;
+    await delay(1000);
+  }
+
+  const manifestText = Object.values(merged)
+    .map((name) => `/useruploads/r/a/${activityId}/${name}.mp3`)
+    .join('\n');
+  return extractAudioInfoFromText(manifestText, activityId);
 }
 
 module.exports = {
   listBooks,
   listChapters,
   listExercises,
+  discoverPistaManifestFromExercise,
   destroyCatalogWindow,
   buildExerciseUrl,
 };
