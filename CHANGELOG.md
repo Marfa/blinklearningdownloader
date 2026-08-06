@@ -2,6 +2,12 @@
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
 
+## [1.2.2] — 2026-08-06
+
+### Изменено
+
+- **Обновления**: убрано встроенное автообновление (`electron-updater`) — уведомление о новой версии и ссылка в «О программе» открывают страницу [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases/latest). Скачивание и установка — вручную (меньше ложных срабатываний антивируса на portable/setup).
+
 ## [1.2.1] — 2026-07-28
 
 ### Исправлено

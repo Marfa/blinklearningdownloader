@@ -748,7 +748,9 @@ button[type='submit']:disabled {
 }
 
 .help-version-update {
-  color: var(--text-muted, #666);
+  margin-left: 0.25em;
+  font-size: inherit;
+  word-break: normal;
 }
 
 .help-modal-link {

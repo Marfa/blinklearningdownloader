@@ -869,6 +869,7 @@ async function handleLogout() {
 }
 
 const GITHUB_REPO_URL = 'https://github.com/Marfa/blinklearningdownloader';
+const GITHUB_RELEASES_URL = 'https://github.com/Marfa/blinklearningdownloader/releases/latest';
 const DONATE_URL = 'https://www.donationalerts.com/r/themarfa';
 const DONATE_CRYPTO_URL = 'https://nowpayments.io/donation/themarfa';
 
@@ -885,6 +886,10 @@ const helpModalBackdrop = document.getElementById('help-modal-backdrop');
 
 let latestAvailableVersion = null;
 
+function openLatestReleasePage() {
+  window.blinkAuth?.openExternal?.(GITHUB_RELEASES_URL);
+}
+
 async function openHelpModal() {
   loadAppVersion();
   helpModal.classList.remove('hidden');
@@ -899,7 +904,7 @@ function closeHelpModal() {
 
 function loadAppVersion() {
   const apply = (version) => {
-    helpVersion.textContent = version || '1.2.1';
+    helpVersion.textContent = version || '1.2.2';
     updateHelpVersionLabel();
   };
 
@@ -969,48 +974,12 @@ async function checkAppUpdate() {
   }
 }
 
-let removeUpdateProgressListener = null;
-
-function updateProgressStatusText(progress) {
-  if (!progress?.phase) return '';
-  switch (progress.phase) {
-    case 'checking':
-      return tt('ui.update.checking');
-    case 'downloading':
-      return tt('ui.update.downloading', { percent: progress.percent ?? 0 });
-    case 'installing':
-      return tt('ui.update.installing');
-    default:
-      return '';
-  }
-}
-
-async function onUpdateNoticeClick() {
-  if (!window.blinkAuth?.promptUpdate) return;
-
-  removeUpdateProgressListener?.();
-  removeUpdateProgressListener = window.blinkAuth.onUpdateProgress?.((progress) => {
-    const text = updateProgressStatusText(progress);
-    if (text) showStatus(text, 'info');
-  });
-
-  try {
-    const result = await window.blinkAuth.promptUpdate();
-    if (result?.cancelled) return;
-    if (!result?.ok && result?.message) {
-      showStatus(result.message, 'error');
-    }
-  } catch (err) {
-    console.error('promptUpdate failed', err);
-    showStatus(tt('update.failed'), 'error');
-  } finally {
-    removeUpdateProgressListener?.();
-    removeUpdateProgressListener = null;
-  }
-}
-
 if (updateNotice) {
-  updateNotice.addEventListener('click', onUpdateNoticeClick);
+  updateNotice.addEventListener('click', openLatestReleasePage);
+}
+
+if (helpVersionUpdate) {
+  helpVersionUpdate.addEventListener('click', openLatestReleasePage);
 }
 
 helpBtn.addEventListener('click', openHelpModal);

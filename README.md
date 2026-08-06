@@ -10,9 +10,9 @@
 
 | Платформа | Файл | Описание |
 |-----------|------|----------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.8.exe` | Установщик (NSIS) |
-| Windows | `BlinkLearning-Downloader-1.1.8-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
-| Windows | `BlinkLearning-Downloader-1.1.8-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
+| Windows | `BlinkLearning-Downloader-Setup-1.2.2.exe` | Установщик (NSIS) |
+| Windows | `BlinkLearning-Downloader-1.2.2-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
+| Windows | `BlinkLearning-Downloader-1.2.2-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
 | macOS (Apple Silicon) | `BlinkLearning-Downloader-1.2.1-mac-arm64.zip` | Приложение `.app` в архиве |
 
 > **Android:** мобильной сборки нет — проект основан на Electron для настольных ОС.
@@ -30,8 +30,12 @@
 5. **Прослушивание** — воспроизведение одного трека в приложении.
 6. **Скачивание** — выбор папки (по умолчанию «Загрузки»), отображение прогресса.
 7. **Язык** — переключение русский / английский; выбор сохраняется локально.
-8. **Обновления** — уведомление о новой версии; по кнопке — запрос «Обновить приложение?», при согласии загрузка и установка из [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases).
+8. **Обновления** — уведомление о новой версии; по кнопке открывается страница [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases/latest) (скачивание вручную).
 9. **О программе** — версия (с пометкой о доступном обновлении) и ссылка на исходный код.
+
+### Что нового в 1.2.2
+
+- Убрано встроенное автообновление: уведомление и ссылка в «О программе» открывают релизы GitHub.
 
 ### Что нового в 1.2.1
 
@@ -151,14 +155,15 @@ node scripts/test-audio-download.js
 | `src/settings.js` | Локальные настройки |
 | `src/i18n-messages.js` | Строки интерфейса (ru / en) |
 | `src/update-check.js` | Проверка версии на GitHub |
-| `src/auto-update.js` | Загрузка и установка обновления |
 | `src/proxy-picker.js` | Подбор SOCKS5 |
 | `src/renderer/` | Интерфейс |
 | `assets/icons/` | Иконки |
 
 ## Разработка
 
-Исходный код подготовлен с помощью [Cursor](https://cursor.com).
+Код подготовлен с помощью [Cursor](https://cursor.com).
+
+Поддержка проекта: [Донат](https://www.donationalerts.com/r/themarfa) · [Донат криптой](https://nowpayments.io/donation/themarfa)
 
 Скрипты в `scripts/` для отладки каталога и авторизации требуют `BLINK_EMAIL` и `BLINK_PASSWORD` в окружении — **не коммитьте** реальные логины и пароли. Локальные дампы и пробы — в `scripts/probe-out/` (игнорируются Git).
 

@@ -234,8 +234,8 @@
       class="fab-btn update-notice hidden"
       data-i18n-aria="ui.update.aria"
       data-i18n-title="ui.update.aria"
-      aria-label="Update application"
-      title="Update application"
+      aria-label="Open releases page"
+      title="Open releases page"
     >
       <svg class="fab-icon" aria-hidden="true"><use href="#icon-update"></use></svg>
       <span class="update-notice-label" data-i18n="ui.update.available">Доступна новая версия</span>
@@ -271,10 +271,12 @@
           <h2 id="help-modal-title" class="help-modal-title" data-i18n="ui.help.about">О программе</h2>
         </div>
         <p class="help-modal-version">
-          <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.2.1</span><span
+                    <span data-i18n="ui.help.version">Версия:</span> <span id="help-version">1.2.2</span>
+          <button
+            type="button"
             id="help-version-update"
-            class="help-version-update hidden"
-          ></span>
+            class="help-version-update help-external-link hidden"
+          ></button>
         </p>
         <p class="help-modal-link">
           <span class="help-link-label" data-i18n="ui.help.sourceCode">Исходный код</span>

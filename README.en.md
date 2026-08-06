@@ -10,9 +10,9 @@ Latest builds: [GitHub Releases](https://github.com/Marfa/blinklearningdownloade
 
 | Platform | File | Description |
 |----------|------|-------------|
-| Windows | `BlinkLearning-Downloader-Setup-1.1.8.exe` | NSIS installer |
-| Windows | `BlinkLearning-Downloader-1.1.8-win-x64-portable.exe` | Portable single `.exe` (no install) |
-| Windows | `BlinkLearning-Downloader-1.1.8-win-x64.zip` | ZIP of the unpacked app folder |
+| Windows | `BlinkLearning-Downloader-Setup-1.2.2.exe` | NSIS installer |
+| Windows | `BlinkLearning-Downloader-1.2.2-win-x64-portable.exe` | Portable single `.exe` (no install) |
+| Windows | `BlinkLearning-Downloader-1.2.2-win-x64.zip` | ZIP of the unpacked app folder |
 | macOS (Apple Silicon) | `BlinkLearning-Downloader-1.2.1-mac-arm64.zip` | `.app` in a zip |
 
 > **Android:** no mobile build — Electron desktop only.
@@ -28,8 +28,12 @@ See [CHANGELOG.md](CHANGELOG.md).
 5. **Listen** — preview a single track in the app.
 6. **Download** — folder picker and progress.
 7. **Language** — RU/EN toggle, saved locally.
-8. **Updates** — notice when a newer release is available; the button asks “Update application?” and installs from [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases) if confirmed.
+8. **Updates** — notice when a newer release is available; the button opens [GitHub Releases](https://github.com/Marfa/blinklearningdownloader/releases/latest) (manual download).
 9. **About** — version (with available update note) and source code link.
+
+### What’s new in 1.2.2
+
+- Removed in-app auto-update: the notice and About link open GitHub Releases instead.
 
 ### What’s new in 1.2.1
 
@@ -124,6 +128,10 @@ node scripts/test-catalog.js
 ```
 
 Do not commit real credentials. Local debug output lives under `scripts/probe-out/` (gitignored).
+
+Code prepared with [Cursor](https://cursor.com).
+
+Support: [Donate](https://www.donationalerts.com/r/themarfa) · [Crypto donate](https://nowpayments.io/donation/themarfa)
 
 ## License
 

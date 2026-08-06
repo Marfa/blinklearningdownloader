@@ -23,12 +23,6 @@ try {
     },
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate'),
-    promptUpdate: () => ipcRenderer.invoke('app:promptUpdate'),
-    onUpdateProgress: (callback) => {
-      const listener = (_event, payload) => callback(payload);
-      ipcRenderer.on('app:updateProgress', listener);
-      return () => ipcRenderer.removeListener('app:updateProgress', listener);
-    },
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
     pickProxy: () => ipcRenderer.invoke('proxy:pick'),
     onProxyPickProgress: (callback) => {

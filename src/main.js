@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const fs = require('fs');
 
 const GITHUB_REPO_URL = 'https://github.com/Marfa/blinklearningdownloader';
-const GITHUB_RELEASES_URL = 'https://github.com/Marfa/blinklearningdownloader/releases';
+const GITHUB_RELEASES_URL = 'https://github.com/Marfa/blinklearningdownloader/releases/latest';
 const DONATE_URL = 'https://www.donationalerts.com/r/themarfa';
 const DONATE_CRYPTO_URL = 'https://nowpayments.io/donation/themarfa';
 const PROXY_AD_URL = 'https://proxys.world/?refid=41873';
@@ -48,12 +48,6 @@ const { getAppVersion } = require('./version');
 const { parseExerciseRef } = require('./lesson');
 const { checkForUpdate } = require('./update-check');
 const { pickWorkingSocks5Proxy } = require('./proxy-picker');
-const {
-  initAutoUpdater,
-  setUpdateProgressHandler,
-  setBeforeInstallHook,
-  downloadAndInstall,
-} = require('./auto-update');
 
 let mainWindow;
 
@@ -105,12 +99,6 @@ function createWindow() {
 function sendDownloadProgress(payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('audio:progress', payload);
-  }
-}
-
-function sendUpdateProgress(payload) {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('app:updateProgress', payload);
   }
 }
 
@@ -167,9 +155,6 @@ async function ensureAudioPistaOptions() {
 }
 
 app.whenReady().then(() => {
-  initAutoUpdater();
-  setUpdateProgressHandler(sendUpdateProgress);
-  setBeforeInstallHook(() => destroyCatalogWindow());
   createWindow();
 });
 
@@ -468,36 +453,6 @@ ipcMain.handle('app:logout', async () => {
 ipcMain.handle('app:getVersion', () => getAppVersion());
 
 ipcMain.handle('app:checkForUpdate', () => checkForUpdate());
-
-ipcMain.handle('app:promptUpdate', async () => {
-  const locale = getLocale();
-  const { response } = await dialog.showMessageBox(mainWindow, {
-    type: 'question',
-    buttons: [t('update.yes', locale), t('update.no', locale)],
-    defaultId: 0,
-    cancelId: 1,
-    noLink: true,
-    title: t('update.promptTitle', locale),
-    message: t('update.promptMessage', locale),
-  });
-
-  if (response !== 0) {
-    return { ok: false, cancelled: true };
-  }
-
-  const result = await downloadAndInstall();
-  if (result.ok) {
-    return { ok: true, installing: true };
-  }
-
-  if (result.reason === 'notPackaged') {
-    return { ok: false, message: t('update.notPackaged', locale) };
-  }
-  if (result.reason === 'none') {
-    return { ok: false, message: t('update.none', locale) };
-  }
-  return { ok: false, message: result.message || t('update.failed', locale) };
-});
 
 ipcMain.handle('app:openExternal', async (_event, url) => {
   if (ALLOWED_EXTERNAL_URLS.has(url)) {
