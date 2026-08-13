@@ -21,15 +21,15 @@
   "author": "",
   "license": "CC-BY-NC-SA-4.0",
   "devDependencies": {
-    "electron": "^42.2.0",
-    "electron-builder": "^26.8.1"
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3"
   },
   "dependencies": {
-    "axios": "^1.7.9",
+    "axios": "^1.19.0",
     "cheerio": "^1.0.0",
-    "http-cookie-agent": "^6.0.8",
-    "socks-proxy-agent": "^8.0.5",
-    "tough-cookie": "^5.1.0"
+    "http-cookie-agent": "^8.0.0",
+    "socks-proxy-agent": "^10.1.0",
+    "tough-cookie": "^6.0.2"
   },
   "build": {
     "appId": "com.marfa.blinklearningdownloader",
