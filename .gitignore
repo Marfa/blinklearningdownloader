@@ -21,4 +21,3 @@ scripts/probe-out/
 scripts/app-bundle-snippet.txt
 
 # Локальные правила Cursor (не коммитить)
-.cursor/rules/
