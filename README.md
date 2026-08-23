@@ -13,7 +13,7 @@
 | Windows | `BlinkLearning-Downloader-Setup-1.2.2.exe` | Установщик (NSIS) |
 | Windows | `BlinkLearning-Downloader-1.2.2-win-x64-portable.exe` | Без установки — один переносимый `.exe` |
 | Windows | `BlinkLearning-Downloader-1.2.2-win-x64.zip` | ZIP-архив распакованного приложения (portable) |
-| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.2.1-mac-arm64.zip` | Приложение `.app` в архиве |
+| macOS (Apple Silicon) | `BlinkLearning-Downloader-1.2.2-mac-arm64.zip` | Приложение `.app` в архиве |
 
 > **Android:** мобильной сборки нет — проект основан на Electron для настольных ОС.
 
