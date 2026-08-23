@@ -113,6 +113,16 @@ function requireCatalogId(id) {
   return s;
 }
 
+/** JSON.stringify alone is not enough for CodeQL js/bad-code-sanitization. */
+function jsStringLiteral(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
 async function execJs(win, script, timeoutMs = SCRIPT_TIMEOUT_MS) {
   return Promise.race([
     win.webContents.executeJavaScript(script, true),
@@ -320,7 +330,7 @@ async function listBooks() {
   const userId = requireCatalogId(await getBlinkUserId());
   const raw = await runScript(
     `(async () => {
-      const userID = ${JSON.stringify(userId)};
+      const userID = ${jsStringLiteral(userId)};
       const data = await blink.api.cancellableApiCall(blink.api.getMyBooks, [{ userID }], null, {});
       return data;
     })()`,
@@ -349,8 +359,8 @@ async function fetchBookData(bookId) {
   const userId = requireCatalogId(await getBlinkUserId());
   return runScript(
     `(async () => {
-      const bookId = ${JSON.stringify(safeBookId)};
-      const userID = ${JSON.stringify(userId)};
+      const bookId = ${jsStringLiteral(safeBookId)};
+      const userID = ${jsStringLiteral(userId)};
       try {
         return await blink.api.cancellableGetBook(bookId, userID, false, false);
       } catch (e1) {
@@ -427,7 +437,7 @@ async function listChapters(bookId) {
 
   const safeBookId = requireCatalogId(bookId);
   await runScript(
-    `(() => { location.hash = ${JSON.stringify(buildBookHash(safeBookId))}; })()`,
+    `(() => { location.hash = ${jsStringLiteral(buildBookHash(safeBookId))}; })()`,
     10000
   );
   await delay(2000);
@@ -501,7 +511,7 @@ async function scrapeExercisePistaManifest(activityId) {
   const safeActivityId = requireCatalogId(activityId);
   return runScript(
     `(() => {
-      const activityId = ${JSON.stringify(safeActivityId)};
+      const activityId = ${jsStringLiteral(safeActivityId)};
       const re = /\\/useruploads\\/r\\/a\\/(\\d+)\\/(PISTA[^"'\\'\\\\s<>]+)\\.mp3/gi;
       const sources = [document.documentElement.innerHTML];
       for (const frame of document.querySelectorAll('iframe')) {
@@ -561,7 +571,7 @@ async function discoverPistaManifestFromExercise(bookId, activityId) {
   const safeActivityId = requireCatalogId(activityId);
   await ensureCatalogWindow();
   await runScript(
-    `(() => { location.hash = ${JSON.stringify(`#responsive/book/${safeBookId}/${safeActivityId}`)}; })()`,
+    `(() => { location.hash = ${jsStringLiteral(`#responsive/book/${safeBookId}/${safeActivityId}`)}; })()`,
     10000
   );
 
