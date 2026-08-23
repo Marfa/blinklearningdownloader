@@ -89,6 +89,30 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Hostname allowlist — substring checks on full URLs are spoofable. */
+function isBlinkAppUrl(href) {
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase();
+    if (host !== 'blinklearning.com' && !host.endsWith('.blinklearning.com')) {
+      return false;
+    }
+    const path = `${u.pathname}${u.hash}`.toLowerCase();
+    return !path.includes('/login');
+  } catch {
+    return false;
+  }
+}
+
+/** Whitelist before embedding IDs into executeJavaScript strings. */
+function requireCatalogId(id) {
+  const s = String(id ?? '');
+  if (!/^[0-9A-Za-z_-]+$/.test(s)) {
+    throw new Error('INVALID_CATALOG_ID');
+  }
+  return s;
+}
+
 async function execJs(win, script, timeoutMs = SCRIPT_TIMEOUT_MS) {
   return Promise.race([
     win.webContents.executeJavaScript(script, true),
@@ -123,8 +147,7 @@ async function loadAndWaitForBlink(win) {
     };
     const timer = setTimeout(() => finish(new Error('CATALOG_BLINK_TIMEOUT')), LOAD_URL_TIMEOUT_MS);
     const onDone = () => {
-      const href = wc.getURL();
-      if (href.includes('blinklearning.com') && !href.includes('/login')) {
+      if (isBlinkAppUrl(wc.getURL())) {
         finish();
       }
     };
@@ -294,7 +317,7 @@ function filterCatalogEntries(items) {
 async function listBooks() {
   destroyCatalogWindow();
 
-  const userId = await getBlinkUserId();
+  const userId = requireCatalogId(await getBlinkUserId());
   const raw = await runScript(
     `(async () => {
       const userID = ${JSON.stringify(userId)};
@@ -322,10 +345,11 @@ async function listBooks() {
 }
 
 async function fetchBookData(bookId) {
-  const userId = await getBlinkUserId();
+  const safeBookId = requireCatalogId(bookId);
+  const userId = requireCatalogId(await getBlinkUserId());
   return runScript(
     `(async () => {
-      const bookId = ${JSON.stringify(String(bookId))};
+      const bookId = ${JSON.stringify(safeBookId)};
       const userID = ${JSON.stringify(userId)};
       try {
         return await blink.api.cancellableGetBook(bookId, userID, false, false);
@@ -401,13 +425,14 @@ async function listChapters(bookId) {
   const chapters = filterCatalogEntries(extractUnits(book));
   if (chapters.length) return sortByTitle(chapters);
 
+  const safeBookId = requireCatalogId(bookId);
   await runScript(
-    `(() => { location.hash = ${JSON.stringify(buildBookHash(bookId))}; })()`,
+    `(() => { location.hash = ${JSON.stringify(buildBookHash(safeBookId))}; })()`,
     10000
   );
   await delay(2000);
 
-  const bookRetry = await fetchBookData(bookId);
+  const bookRetry = await fetchBookData(safeBookId);
   const retryChapters = filterCatalogEntries(extractUnits(bookRetry));
   return sortByTitle(retryChapters);
 }
@@ -473,9 +498,10 @@ async function listExercises(bookId, chapterId) {
 }
 
 async function scrapeExercisePistaManifest(activityId) {
+  const safeActivityId = requireCatalogId(activityId);
   return runScript(
     `(() => {
-      const activityId = ${JSON.stringify(String(activityId))};
+      const activityId = ${JSON.stringify(safeActivityId)};
       const re = /\\/useruploads\\/r\\/a\\/(\\d+)\\/(PISTA[^"'\\'\\\\s<>]+)\\.mp3/gi;
       const sources = [document.documentElement.innerHTML];
       for (const frame of document.querySelectorAll('iframe')) {
@@ -531,16 +557,18 @@ async function scrapeExercisePistaManifest(activityId) {
 }
 
 async function discoverPistaManifestFromExercise(bookId, activityId) {
+  const safeBookId = requireCatalogId(bookId);
+  const safeActivityId = requireCatalogId(activityId);
   await ensureCatalogWindow();
   await runScript(
-    `(() => { location.hash = ${JSON.stringify(`#responsive/book/${bookId}/${activityId}`)}; })()`,
+    `(() => { location.hash = ${JSON.stringify(`#responsive/book/${safeBookId}/${safeActivityId}`)}; })()`,
     10000
   );
 
-  let uploadId = String(activityId);
+  let uploadId = safeActivityId;
   let merged = {};
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const found = await scrapeExercisePistaManifest(activityId);
+    const found = await scrapeExercisePistaManifest(safeActivityId);
     if (found?.uploadId) uploadId = String(found.uploadId);
     if (found?.manifest && typeof found.manifest === 'object') {
       merged = { ...merged, ...found.manifest };
